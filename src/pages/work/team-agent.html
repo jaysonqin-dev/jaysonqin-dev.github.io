@@ -1,0 +1,111 @@
+<!--
+title: A team-facing analytics agent | Jayson Qin
+description: Case study: an AI agent that managers on a product R&D team use for testing-status questions and routine drafting. Design decisions, a metric error caught before it spread, and what I'd measure next.
+path: work/team-agent.html
+nav: work
+-->
+    <div class="wrap">
+      <section class="case-hero">
+        <p class="crumb"><a href="{{base}}index.html#work">Work</a> / Team analytics agent</p>
+        <h1>A team-facing analytics agent, in daily use by managers.</h1>
+        <p class="lede">Managers on a product R&amp;D team ask it about testing status and results, and use it for routine drafting. I designed, built and evaluated it. This page is anonymized: no internal names, no data, and examples are synthetic.</p>
+        <dl class="meta-row">
+          <div><dt>Role</dt><dd>Designer, builder, evaluator</dd></div>
+          <div><dt>Users</dt><dd>Managers on the team</dd></div>
+          <div><dt>Built with</dt><dd>Copilot Studio agent, BI datasets, tracker lookups</dd></div>
+          <div><dt>Status</dt><dd>In use. Not yet shared beyond its first users</dd></div>
+        </dl>
+      </section>
+
+      <div class="case-body">
+        <nav class="toc" aria-label="On this page">
+          <p>On this page</p>
+          <ol>
+            <li><a href="#problem">The problem</a></li>
+            <li><a href="#design">What I built</a></li>
+            <li><a href="#decisions">Design decisions</a></li>
+            <li><a href="#caught">The error I caught</a></li>
+            <li><a href="#rollout">Rollout</a></li>
+            <li><a href="#limits">What this doesn't show</a></li>
+            <li><a href="#next">What's next</a></li>
+          </ol>
+        </nav>
+
+        <article class="prose">
+          <h2 id="problem">The problem</h2>
+          <p>Testing information for a product team lives in several places: trackers kept by different groups, and BI datasets with their own definitions. A leadership question such as "where are we on this program?" meant someone pulling from several of them and reconciling the differences. Smaller requests (a status email, a reply to a thread) came in constantly and were mostly the same few patterns.</p>
+          <p>A wrong answer here is not cosmetic. It feeds decisions about what to test and what to make. So the bar was not "answers quickly". It was "answers correctly, says where it got the answer, and says when it can't".</p>
+
+          <h2 id="design">What I built</h2>
+          <figure>
+            <div class="fig-card">
+              <svg class="diagram" viewBox="0 0 820 350" role="img" aria-labelledby="dg-t dg-d" width="100%">
+                <title id="dg-t">Architecture of the team analytics agent</title>
+                <desc id="dg-d">A manager asks the agent. The agent, guided by instructions for approval policy, source routing and metric definitions, calls one tool per BI dataset, a tracker lookup, and a docs, mail and chat source for non-testing questions. It returns a structured answer or a draft that it never sends.</desc>
+                <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="currentColor" style="color:var(--muted)"/></marker></defs>
+                <rect class="box" x="10" y="110" width="116" height="64" rx="12"/><text class="lbl" x="68" y="140" text-anchor="middle">Manager</text><text class="sub" x="68" y="158" text-anchor="middle">asks in words</text>
+                <rect class="box key" x="176" y="64" width="214" height="156" rx="14"/>
+                <text class="lbl" x="196" y="94">Agent</text>
+                <text class="sub" x="196" y="118">Instructions, read in full every turn:</text>
+                <text x="196" y="142" font-size="13">approval policy</text>
+                <text x="196" y="162" font-size="13">source routing</text>
+                <text x="196" y="182" font-size="13">metric definitions</text>
+                <text x="196" y="202" font-size="13">output format</text>
+                <rect class="box" x="456" y="14" width="232" height="46" rx="10"/><text class="lbl" x="572" y="42" text-anchor="middle">Tracker lookup</text>
+                <rect class="box" x="456" y="78" width="232" height="46" rx="10"/><text class="lbl" x="572" y="106" text-anchor="middle">BI dataset A</text>
+                <rect class="box" x="456" y="142" width="232" height="46" rx="10"/><text class="lbl" x="572" y="170" text-anchor="middle">BI dataset B</text>
+                <rect class="box" x="456" y="206" width="232" height="46" rx="10"/><text class="lbl" x="572" y="234" text-anchor="middle">BI dataset C</text>
+                <rect class="box soft dash" x="456" y="270" width="232" height="46" rx="10" stroke-dasharray="5 4"/><text class="lbl" x="572" y="291" text-anchor="middle">Docs, mail, chat</text><text class="sub" x="572" y="307" text-anchor="middle">for non-testing questions</text>
+                <path class="arrow" d="M126 142 H176"/>
+                <path class="arrow" d="M390 120 L456 37"/><path class="arrow" d="M390 135 L456 101"/><path class="arrow" d="M390 150 L456 165"/><path class="arrow" d="M390 165 L456 229"/><path class="arrow dash" d="M390 180 L456 293"/>
+                <text class="sub" x="700" y="106">one tool per</text><text class="sub" x="700" y="122">dataset, identifiers</text><text class="sub" x="700" y="138">fixed in the tool</text>
+                <rect class="box" x="176" y="268" width="214" height="62" rx="12"/><text class="lbl" x="283" y="294" text-anchor="middle">Structured answer</text><text class="sub" x="283" y="313" text-anchor="middle">or a draft. It never sends.</text>
+                <path class="arrow" d="M283 220 V268"/>
+                <path class="arrow" d="M176 299 H68 V174"/>
+              </svg>
+            </div>
+            <figcaption>Simplified and anonymized. The dashed route is used only for questions that are not about testing.</figcaption>
+          </figure>
+          <p>The agent has a small set of jobs: answer status and results questions in a structured format, answer higher-level questions that need several sources combined, and draft routine messages for the user to review. It reads data through tools and writes nothing on its own.</p>
+
+          <h2 id="decisions">Design decisions</h2>
+          <h3>One tool per dataset, identifiers fixed</h3>
+          <p>I first thought of one generic "query a dataset" tool. I rejected it: it asks the model to reproduce a long dataset identifier on every call, and one wrong character fails silently as a "not found". Picking among clearly named tools is something a model does reliably. Only the query text is left for the model to write.</p>
+          <h3>Exact values live in the instructions, not the knowledge base</h3>
+          <p>Retrieval is probabilistic: the agent decides whether to search, and what comes back can be truncated or paraphrased. Instructions are read in full every turn. So anything that must be followed exactly (identifiers, the specific workaround for a known tool bug) is in the instructions. The knowledge base is for large reference material where an approximate answer is fine.</p>
+          <h3>Route by the kind of question</h3>
+          <p>People ask this agent about things that are not testing at all: benefits, forms, who to ask. A metrics dataset answers those confidently and wrongly. The instructions say which source answers which kind of question, and that a mixed question runs the sources in parallel.</p>
+          <h3>It drafts. People send.</h3>
+          <p>For anything that would reach another person, the agent shows its planned action and waits. That one rule removes a whole class of failure and made it easier for managers to trust the rest.</p>
+
+          <h2 id="caught">The error I caught, and what it taught me</h2>
+          <div class="callout">
+            <b class="k">Synthetic example of a real failure</b>
+            <p>I wrote a rule for available stock as "available minus reserved", from how it was described to me. The live agent then read the data model's own glossary and pointed out that the field is <em>already net of</em> reserved and non-sellable units. My rule would have subtracted reserved stock twice and under-reported what could be sold.</p>
+          </div>
+          <p>Two lessons. First, a calculation written from a verbal description is unverified until it is checked against the source's definition. Second, and more uncomfortable: I found this because the agent happened to read the glossary, not because anything I had built was designed to catch it. I had no automated evaluation at that point.</p>
+          <p>That gap is why I built an evaluation harness. The failure is now a case in it (<code>md1</code>), and it is one of ten lessons I wrote up in <a href="{{base}}work/agent-playbook.html">the playbook</a>.</p>
+
+          <h2 id="rollout">Rollout</h2>
+          <p>I used it on my own work first, then gave it to managers on the team, who use it. I also confirmed the audience before writing the instructions for a shared version, after getting the scope wrong twice by inferring it from a label instead of asking who would use it and for what. It has not been shared beyond those first users yet.</p>
+
+          <h2 id="limits">What this page doesn't show</h2>
+          <div class="callout limits">
+            <b class="k">Honest limits</b>
+            <ul>
+              <li>No usage numbers or accuracy figures. I don't have telemetry I can publish, so I won't invent any.</li>
+              <li>The original rollout had no automated evaluation. The harness came after, from the failures above.</li>
+              <li>The data, tools and systems are internal, so you cannot run this. The method is open source in the playbook, and the examples there are synthetic.</li>
+            </ul>
+          </div>
+
+          <h2 id="next">What's next</h2>
+          <p>Move this agent onto the evaluation harness and the weekly monitoring report from <a href="{{base}}work/agent-playbook.html">agent-playbook</a>: a fixed case set built from real incidents, a regression gate before every instruction change, and a log that ties a bad week to the version that caused it.</p>
+
+          <div class="next">
+            <a class="btn btn-ghost" href="{{base}}index.html#work">&larr; All work</a>
+            <a class="btn btn-primary" href="{{base}}work/agent-playbook.html">Next: Evaluating agents &rarr;</a>
+          </div>
+        </article>
+      </div>
+    </div>

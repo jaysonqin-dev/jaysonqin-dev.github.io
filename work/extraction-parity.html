@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Proving a model swap is safe | Jayson Qin</title>
+  <meta name="description" content="Case study: an evaluation harness for replacing the model behind a document-extraction step. Golden set, schema validation, normalization, field-level parity with a mismatch taxonomy, per-class gating and a cost model.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; base-uri 'self'; form-action 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f0f0d" media="(prefers-color-scheme: dark)">
+  <link rel="canonical" href="https://qjl0629.github.io/work/extraction-parity.html">
+  <link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="../assets/img/apple-touch-icon.png">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Jayson Qin">
+  <meta property="og:title" content="Proving a model swap is safe | Jayson Qin">
+  <meta property="og:description" content="Case study: an evaluation harness for replacing the model behind a document-extraction step. Golden set, schema validation, normalization, field-level parity with a mismatch taxonomy, per-class gating and a cost model.">
+  <meta property="og:url" content="https://qjl0629.github.io/work/extraction-parity.html">
+  <meta property="og:image" content="https://qjl0629.github.io/assets/img/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <script src="../assets/js/theme-init.js"></script>
+  <link rel="stylesheet" href="../assets/css/site.css">
+
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="../index.html" aria-label="Jayson Qin, home"><span class="brand-mark" aria-hidden="true">JQ</span><span>Jayson Qin</span></a>
+      <nav aria-label="Primary">
+        <ul class="nav-links">
+          <li><a href="../index.html#work" aria-current="page">Work</a></li>
+          <li><a href="../index.html#training"><span class="nav-long">How I train agents</span><span class="nav-short">Training</span></a></li>
+          <li><a href="../lab/eval-lab.html">Lab</a></li>
+          <li class="hide-sm"><a href="../index.html#about">About</a></li>
+          <li>
+            <button class="icon-btn" type="button" data-theme-toggle aria-label="Toggle dark mode">
+              <svg class="theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg>
+              <svg class="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+            </button>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+<div class="wrap">
+      <section class="case-hero">
+        <p class="crumb"><a href="../index.html#work">Work</a> / Model-swap parity</p>
+        <h1>Proving a model swap is safe.</h1>
+        <p class="lede">A pipeline extracts structured fields from documents with an LLM step. The step is being replaced with something cheaper. Is the new one safe to ship? This answers it with evidence instead of a few eyeballed samples.</p>
+        <div class="link-row">
+          <a class="btn btn-primary" href="https://github.com/qjl0629/extraction-agent-demo" rel="noopener">Source on GitHub</a>
+        </div>
+        <dl class="meta-row">
+          <div><dt>Role</dt><dd>Sole author</dd></div>
+          <div><dt>Stack</dt><dd>Python 3.9, standard library only</dd></div>
+          <div><dt>Data</dt><dd>12 synthetic documents, golden records, two candidate fixtures</dd></div>
+          <div><dt>Tests</dt><dd>82</dd></div>
+        </dl>
+      </section>
+
+      <div class="case-body">
+        <nav class="toc" aria-label="On this page">
+          <p>On this page</p>
+          <ol>
+            <li><a href="#origin">Where it came from</a></li>
+            <li><a href="#method">Method</a></li>
+            <li><a href="#result">Result</a></li>
+            <li><a href="#class">Why a gate per class</a></li>
+            <li><a href="#limits">Limits</a></li>
+          </ol>
+        </nav>
+
+        <article class="prose">
+          <h2 id="origin">Where it came from</h2>
+          <p>In a real automation, a document-extraction step ran on a metered prompt builder. I replaced it with a general agent runtime that costs less per run. The new step produced the same output on the test I ran, which is not the same as knowing it would on every document. This repository is the version of that check I would want next time: repeatable, and strict where it should be.</p>
+          <p>The documents here are synthetic, and the candidate outputs are hand-written fixtures standing in for model output. No live model is called.</p>
+
+          <h2 id="method">Method</h2>
+          <ol>
+            <li><strong>Fix the expected output first.</strong> 12 golden records define what correct means before any candidate is judged.</li>
+            <li><strong>Validate against a schema.</strong> A small validator returns structured errors with paths and codes. The same schema is the contract for the golden set and the candidates.</li>
+            <li><strong>Normalize, then compare.</strong> <code>4,5 out of 5</code>, <code>14 Mar 2025</code> and <code>N/A</code> are cosmetic. A rating of 9.0 on a 10 scale where the golden says 4.5 on a 5 scale is not, and normalization must not hide it.</li>
+            <li><strong>Classify every mismatch.</strong> Missing, extra (a hallucinated field), wrong type, wrong value, or format only.</li>
+            <li><strong>Gate per field class.</strong> Not just an overall number.</li>
+            <li><strong>Reason about cost separately.</strong> A parametric model with user-supplied prices compares per-call and flat-capacity pricing and finds the break-even volume. The numbers in the docs are labelled illustrative placeholders.</li>
+          </ol>
+
+          <h2 id="result">Result</h2>
+          <p>Real output of <code>python3 -m extraction_demo summary</code>:</p>
+          <table class="t">
+            <thead><tr><th>Source</th><th>Gate (0.98)</th><th>Docs exact</th><th>Field accuracy</th><th>Strict accuracy</th><th>Schema-valid</th></tr></thead>
+            <tbody>
+              <tr><td>candidate_a</td><td><span class="chip pass">PASS</span></td><td>11/12</td><td>0.992</td><td>0.856</td><td>12/12</td></tr>
+              <tr><td>candidate_b</td><td><span class="chip fail">FAIL</span></td><td>4/12</td><td>0.932</td><td>0.902</td><td>9/12</td></tr>
+              <tr><td>rule-based baseline</td><td><span class="chip fail">FAIL</span></td><td>9/12</td><td>0.977</td><td>0.977</td><td>12/12</td></tr>
+            </tbody>
+          </table>
+          <p>The gap between field accuracy and strict accuracy for <code>candidate_a</code> (0.992 against 0.856) is the point of normalizing: most of its differences are formatting, and strict comparison would have rejected a good candidate. <code>candidate_b</code> carries the failures I expect from a swap: a dropped participant count, a rating on the wrong scale, a hallucinated field, a wrong year, and two reviewers merged into one string.</p>
+
+          <h2 id="class">Why a gate per class</h2>
+          <p>The rule-based baseline scores 0.977 overall and still fails the gate, because it is wrong on a numeric field and an identity field. An overall number averages a wrong recommendation into 131 right cells. In a pipeline that feeds decisions, one wrong rating or date matters more than a slightly paraphrased finding, so the gate has a strict floor for identity, categorical and numeric fields and a looser one for narrative text.</p>
+
+          <h2 id="limits">Limits</h2>
+          <div class="callout limits">
+            <b class="k">Honest limits</b>
+            <ul>
+              <li>12 documents and synthetic fixtures. It demonstrates the method, not any model's accuracy.</li>
+              <li>The baseline was written against the same 12 documents it is scored on, so its 0.977 is optimistic.</li>
+              <li>A live model varies from run to run. The next step is to run each document several times and report agreement; this repository does not do that yet.</li>
+              <li>The thresholds are illustrative. Real ones come from the cost of each error type.</li>
+            </ul>
+          </div>
+          <div class="next">
+            <a class="btn btn-ghost" href="../work/agent-tool-safety.html">&larr; Safe writes</a>
+            <a class="btn btn-primary" href="../index.html#training">How I train my agent &rarr;</a>
+          </div>
+        </article>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="footer">
+    <div class="wrap">
+      <div class="footer-grid">
+        <h2>Hiring for an agent role? I'd like to hear about it.</h2>
+        <ul>
+          <li><a href="#" data-mail>Email</a><noscript> jayson.qin [at] hotmail [dot] com</noscript></li>
+          <li><a href="https://www.linkedin.com/in/jaysonqin/" rel="me noopener">LinkedIn</a></li>
+          <li><a href="https://github.com/qjl0629" rel="me noopener">GitHub</a></li>
+          <li><a href="https://github.com/qjl0629/agent-playbook" rel="noopener">The playbook, on GitHub</a></li>
+        </ul>
+      </div>
+      <small>&copy; 2026 Jayson Qin. Vancouver, BC. Written by hand: HTML, CSS and a little JavaScript. No trackers, no cookies. Demos and data on this site are synthetic; nothing here comes from an employer.</small>
+    </div>
+  </footer>
+  <script src="../assets/js/site.js" defer></script>
+
+</body>
+</html>

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Marksly: Bookmark Organizer</title>
+  <link rel="icon" type="image/png" href="icons/icon-32.png">
+  <link rel="stylesheet" href="organizer.css">
+</head>
+<body>
+  <div class="page">
+    <header class="masthead">
+      <div class="brand">
+        <img class="logo-img" src="icons/icon-48.png" width="34" height="34" alt="" aria-hidden="true">
+        <span class="brand-name">Marksly</span>
+      </div>
+      <div class="masthead-right">
+        <span id="demoBadge" class="pill pill-warn" hidden>Demo data</span>
+        <span class="pill pill-private" title="Nothing you save here ever leaves this computer">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+          Private. Stays on your computer
+        </span>
+      </div>
+    </header>
+
+    <main id="app" aria-live="polite"></main>
+  </div>
+
+  <div id="actionbar" class="actionbar" hidden>
+    <div class="actionbar-inner">
+      <span id="selection" class="selection"></span>
+      <span class="actionbar-links">
+        <button id="selectAllBtn" class="textbtn">Select all</button>
+        <button id="clearAllBtn" class="textbtn">Clear</button>
+      </span>
+      <button id="applyBtn" class="btn btn-primary" disabled>Tidy up</button>
+    </div>
+  </div>
+
+  <dialog id="confirmDialog" aria-labelledby="confirmTitle">
+    <form method="dialog">
+      <h2 id="confirmTitle">Ready to tidy up?</h2>
+      <ul id="confirmList" class="confirm-list"></ul>
+      <p class="confirm-note">Nothing else is deleted. Right afterwards you can undo everything with one click.</p>
+      <div class="confirm-actions">
+        <button value="cancel" class="btn btn-quiet">Cancel</button>
+        <button value="ok" id="confirmOk" class="btn btn-primary" autofocus>Tidy up</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+  <script type="module" src="organizer.js"></script>
+</body>
+</html>

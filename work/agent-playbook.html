@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Evaluating agents before they ship | Jayson Qin</title>
+  <meta name="description" content="Case study: an evaluation harness for tool-using agents that grades tool use, numbers and format, then diffs two runs to show what a change fixed and what it broke. Plus ten lessons from running a team-facing agent.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; base-uri 'self'; form-action 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f0f0d" media="(prefers-color-scheme: dark)">
+  <link rel="canonical" href="https://qjl0629.github.io/work/agent-playbook.html">
+  <link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="../assets/img/apple-touch-icon.png">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Jayson Qin">
+  <meta property="og:title" content="Evaluating agents before they ship | Jayson Qin">
+  <meta property="og:description" content="Case study: an evaluation harness for tool-using agents that grades tool use, numbers and format, then diffs two runs to show what a change fixed and what it broke. Plus ten lessons from running a team-facing agent.">
+  <meta property="og:url" content="https://qjl0629.github.io/work/agent-playbook.html">
+  <meta property="og:image" content="https://qjl0629.github.io/assets/img/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <script src="../assets/js/theme-init.js"></script>
+  <link rel="stylesheet" href="../assets/css/site.css">
+
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="../index.html" aria-label="Jayson Qin, home"><span class="brand-mark" aria-hidden="true">JQ</span><span>Jayson Qin</span></a>
+      <nav aria-label="Primary">
+        <ul class="nav-links">
+          <li><a href="../index.html#work" aria-current="page">Work</a></li>
+          <li><a href="../index.html#training"><span class="nav-long">How I train agents</span><span class="nav-short">Training</span></a></li>
+          <li><a href="../lab/eval-lab.html">Lab</a></li>
+          <li class="hide-sm"><a href="../index.html#about">About</a></li>
+          <li>
+            <button class="icon-btn" type="button" data-theme-toggle aria-label="Toggle dark mode">
+              <svg class="theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg>
+              <svg class="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+            </button>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+<div class="wrap">
+      <section class="case-hero">
+        <p class="crumb"><a href="../index.html#work">Work</a> / Evaluating agents</p>
+        <h1>Evaluating agents before they ship.</h1>
+        <p class="lede">A small harness that grades an agent's answers and tool calls, diffs two runs, and reports what a change fixed and what it broke, with a weekly monitoring report that ties a bad week to the instruction change behind it.</p>
+        <div class="link-row">
+          <a class="btn btn-primary" href="../lab/eval-lab.html">Open the eval lab</a>
+          <a class="btn btn-ghost" href="https://github.com/qjl0629/agent-playbook" rel="noopener">Source on GitHub</a>
+        </div>
+        <dl class="meta-row">
+          <div><dt>Role</dt><dd>Sole author</dd></div>
+          <div><dt>Stack</dt><dd>Python 3.9, standard library only</dd></div>
+          <div><dt>Contents</dt><dd>Harness, monitor, six chapters, ten lessons</dd></div>
+          <div><dt>Tests</dt><dd>44</dd></div>
+        </dl>
+      </section>
+
+      <div class="case-body">
+        <nav class="toc" aria-label="On this page">
+          <p>On this page</p>
+          <ol>
+            <li><a href="#why">Why build it</a></li>
+            <li><a href="#diff">The diff that matters</a></li>
+            <li><a href="#design">Design</a></li>
+            <li><a href="#monitor">Monitoring</a></li>
+            <li><a href="#loop">The learning loop</a></li>
+            <li><a href="#limits">Limits</a></li>
+          </ol>
+        </nav>
+
+        <article class="prose">
+          <h2 id="why">Why build it</h2>
+          <p>The agent I run for a team had no automated evaluation when I first rolled it out. I found a real metric error only because the agent happened to read a glossary and told me (<a href="../work/team-agent.html#caught">the story is here</a>). Nothing I had built was designed to catch it. This repository is what I built so the next one is caught by a test.</p>
+
+          <h2 id="diff">The diff that matters</h2>
+          <p>25 synthetic cases for a fictional inventory assistant, graded on two recorded runs. The transcripts are hand-written to show a realistic failure and fix; they are not output from a real model.</p>
+          <pre class="code"><span class="t-dim">$</span> python3 -m evalkit diff --cases evals/cases/inventory_assistant.jsonl \
+        --before evals/transcripts/v1.jsonl --after evals/transcripts/v2.jsonl
+v1 -&gt; v2
+  pass rate 72% -&gt; 92%
+  regressed: tr4
+  fixed: md1, tr3, ap1, fm3, sr2, nm1
+  still_failing: fm4</pre>
+          <p>The pass rate rose 20 points and a regression sits inside it. An instruction meant to make the agent check the data first fixed six cases, and made it query the inventory for an out-of-scope question (<code>tr4</code>). If I had looked only at the pass rate I would have shipped it. <code>--fail-on-regression</code> turns that into a hard gate.</p>
+          <p>The same run also shows the failure that started this: <code>md1</code> is the case where a quantity already net of reserved stock gets reduced a second time.</p>
+
+          <h2 id="design">Design</h2>
+          <ul>
+            <li><strong>Deterministic graders.</strong> Contains, regex, number within a tolerance, tool called (with an argument subset), tool not called, tool order, length, JSON fields. A model-based judge adds its own variance to the thing you are measuring, so I use one only for what these cannot express.</li>
+            <li><strong>A missing answer is a failure, not a skip.</strong> A harness that quietly skips cases reports a pass rate that means nothing.</li>
+            <li><strong>Grade behavior, not only text.</strong> Right tool, right arguments, right order, and not called when it should not be: an out-of-scope question must not trigger a data query, and a write must not happen before approval.</li>
+            <li><strong>Every incident becomes a case before it becomes a rule.</strong> The case proves the fix and keeps proving it.</li>
+          </ul>
+          <p>One test failed while I wrote the suite and found a real bug: <code>21.5 - 21.4</code> is <code>0.10000000000000142</code> in floating point, so a tolerance of exactly 0.1 wrongly failed. I fixed the grader, not the test.</p>
+
+          <h2 id="monitor">Monitoring</h2>
+          <p>A request log with one field people forget: which instruction version answered. Then a weekly report and an alert rule that needs both an absolute and a relative rise.</p>
+          <pre class="code">week       events  corrected  tool errors  instructions
+2026-W12       42        10%           2%  v13
+2026-W13       46        28%          22%  v14
+2026-W14       45         7%           2%  v15
+
+Alerts:
+  2026-W13: correction rate 28% vs 16% before (instructions v14)
+  2026-W13: tool error rate 22% vs 4% before (instructions v14)</pre>
+          <p>The log is synthetic, generated with a fixed seed to show what the report looks like. It says nothing about any real agent. I also found the alert is noisy at about 45 events a week: several random seeds raised an alert in a week where nothing had changed. The docs say so, because the honest guidance is "an alert is a prompt to read the corrected conversations", not a verdict.</p>
+
+          <h2 id="loop">The learning loop</h2>
+          <p>The same repository documents how my personal agent learns: every correction is triaged against a quality bar (general, specific, with a concrete example, not already covered), and only qualifying ones become rules. About 130 rules have accumulated in roughly three months of daily use. You can <a href="../lab/learning-loop.html">try the triage yourself</a>.</p>
+
+          <h2 id="limits">Limits</h2>
+          <div class="callout limits">
+            <b class="k">Honest limits</b>
+            <ul>
+              <li>25 cases is a smoke test, not a benchmark. It catches regressions in behaviors I thought of.</li>
+              <li>The recorded runs are one sample each. A live model varies run to run, so each case should be run several times with agreement reported. The harness does not do that yet.</li>
+              <li>Passing the set says nothing about cases that are not in it.</li>
+            </ul>
+          </div>
+          <div class="next">
+            <a class="btn btn-ghost" href="../work/marksly.html">&larr; Marksly</a>
+            <a class="btn btn-primary" href="../work/agent-tool-safety.html">Next: Safe writes &rarr;</a>
+          </div>
+        </article>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="footer">
+    <div class="wrap">
+      <div class="footer-grid">
+        <h2>Hiring for an agent role? I'd like to hear about it.</h2>
+        <ul>
+          <li><a href="#" data-mail>Email</a><noscript> jayson.qin [at] hotmail [dot] com</noscript></li>
+          <li><a href="https://www.linkedin.com/in/jaysonqin/" rel="me noopener">LinkedIn</a></li>
+          <li><a href="https://github.com/qjl0629" rel="me noopener">GitHub</a></li>
+          <li><a href="https://github.com/qjl0629/agent-playbook" rel="noopener">The playbook, on GitHub</a></li>
+        </ul>
+      </div>
+      <small>&copy; 2026 Jayson Qin. Vancouver, BC. Written by hand: HTML, CSS and a little JavaScript. No trackers, no cookies. Demos and data on this site are synthetic; nothing here comes from an employer.</small>
+    </div>
+  </footer>
+  <script src="../assets/js/site.js" defer></script>
+
+</body>
+</html>

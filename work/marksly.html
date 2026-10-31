@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Marksly: an on-device language model in a Chrome extension | Jayson Qin</title>
+  <meta name="description" content="Case study: a Chrome extension that finds misfiled bookmarks with an 8 MB embedding model bundled inside it. Previews every move, undoes in one click, and makes no network requests. Measured against planted errors.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; base-uri 'self'; form-action 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f0f0d" media="(prefers-color-scheme: dark)">
+  <link rel="canonical" href="https://qjl0629.github.io/work/marksly.html">
+  <link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="../assets/img/apple-touch-icon.png">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Jayson Qin">
+  <meta property="og:title" content="Marksly: an on-device language model in a Chrome extension | Jayson Qin">
+  <meta property="og:description" content="Case study: a Chrome extension that finds misfiled bookmarks with an 8 MB embedding model bundled inside it. Previews every move, undoes in one click, and makes no network requests. Measured against planted errors.">
+  <meta property="og:url" content="https://qjl0629.github.io/work/marksly.html">
+  <meta property="og:image" content="https://qjl0629.github.io/assets/img/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <script src="../assets/js/theme-init.js"></script>
+  <link rel="stylesheet" href="../assets/css/site.css">
+
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="../index.html" aria-label="Jayson Qin, home"><span class="brand-mark" aria-hidden="true">JQ</span><span>Jayson Qin</span></a>
+      <nav aria-label="Primary">
+        <ul class="nav-links">
+          <li><a href="../index.html#work" aria-current="page">Work</a></li>
+          <li><a href="../index.html#training"><span class="nav-long">How I train agents</span><span class="nav-short">Training</span></a></li>
+          <li><a href="../lab/eval-lab.html">Lab</a></li>
+          <li class="hide-sm"><a href="../index.html#about">About</a></li>
+          <li>
+            <button class="icon-btn" type="button" data-theme-toggle aria-label="Toggle dark mode">
+              <svg class="theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg>
+              <svg class="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+            </button>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+<div class="wrap">
+      <section class="case-hero">
+        <p class="crumb"><a href="../index.html#work">Work</a> / Marksly</p>
+        <h1>An on-device language model in a Chrome extension.</h1>
+        <p class="lede">Marksly finds bookmarks filed in the wrong folder by reading what they are about, using an 8 MB embedding model bundled inside the extension. Every move is previewed, the last run can be undone, and nothing leaves the browser.</p>
+        <div class="link-row">
+          <a class="btn btn-primary" href="../lab/marksly/organizer.html">Open the live demo</a>
+          <a class="btn btn-ghost" href="https://github.com/qjl0629/bookmark-organizer" rel="noopener">Source on GitHub</a>
+        </div>
+        <dl class="meta-row">
+          <div><dt>Role</dt><dd>Sole author: design, model integration, evaluation, UI</dd></div>
+          <div><dt>Stack</dt><dd>JavaScript (Manifest V3), Python for the model conversion</dd></div>
+          <div><dt>Model</dt><dd>potion-base-8M, static embeddings, int8, MIT</dd></div>
+          <div><dt>Tests</dt><dd>97 JavaScript, 13 Python</dd></div>
+        </dl>
+      </section>
+
+      <div class="case-body">
+        <nav class="toc" aria-label="On this page">
+          <p>On this page</p>
+          <ol>
+            <li><a href="#problem">The problem</a></li>
+            <li><a href="#approach">Approach</a></li>
+            <li><a href="#evidence">Evidence</a></li>
+            <li><a href="#engineering">Engineering notes</a></li>
+            <li><a href="#failures">What went wrong first</a></li>
+            <li><a href="#limits">Limits</a></li>
+          </ol>
+        </nav>
+
+        <article class="prose">
+          <h2 id="problem">The problem</h2>
+          <p>People save hundreds of bookmarks, never reorganize them, and file many in the wrong folder in a hurry. Rule-based tools sort by website, which cannot tell that a mortgage article belongs with finance when no word is shared. Tools that use a large language model solve that by sending your bookmarks to a server, and many need an API key.</p>
+          <p>I wanted the semantic part without the upload: a model small enough to ship inside the extension and run offline.</p>
+
+          <figure>
+            <div class="fig-img"><img src="../assets/img/marksly-misfiled.png" width="1280" height="800" alt="Marksly listing bookmarks filed in the wrong folder, each shown as 'now in' and 'move to' with a confidence meter" loading="lazy"></div>
+            <figcaption>Each suggestion reads as <em>where it is now &rarr; where it should go</em>. Demo data is fictional.</figcaption>
+          </figure>
+
+          <h2 id="approach">Approach</h2>
+          <ol>
+            <li><strong>A static embedding model, not a transformer.</strong> Each word has a fixed vector and a bookmark's meaning is the average of its words. That is why it fits: about 8 MB after int8 quantization, no GPU, and it plans a library of 3,300 bookmarks in 120 folders in about 1.4 seconds in the browser.</li>
+            <li><strong>Describe each folder three ways:</strong> the average meaning of its bookmarks, its two closest bookmarks, and its name. A bookmark is flagged only when another folder fits clearly better than its own.</li>
+            <li><strong>A gap the folder's own members never reach.</strong> The threshold for "clearly better" is learned per folder from its members, so a loose, mixed folder does not flag everything and a tight one catches real outliers.</li>
+            <li><strong>Preview, then act.</strong> Nothing changes until the user confirms, and the whole run, including merged and deleted folders and every position in a list, can be undone.</li>
+          </ol>
+
+          <h2 id="evidence">Evidence</h2>
+          <p>I measured against misfiles I planted on purpose in two invented libraries. The second library was written <em>after</em> the thresholds were tuned on the first, to check that the tuning had not just memorized one dataset.</p>
+          <table class="t">
+            <thead><tr><th>Library</th><th>Keyword matching</th><th>With the model</th><th>Wrong flags</th><th>Loose bookmarks placed</th></tr></thead>
+            <tbody>
+              <tr><td>A (thresholds tuned on it)</td><td>0 of 14</td><td>11 of 14</td><td>1</td><td>11 of 12 right, 0 wrong</td></tr>
+              <tr><td>B (written afterwards)</td><td>0 of 8</td><td>7 of 8</td><td>0</td><td>6 of 6 right</td></tr>
+            </tbody>
+          </table>
+          <p>The one wrong flag in library A is a known case I kept in the test suite on purpose, and the next section explains it. Planting errors beats eyeballing results: it gives a denominator, and it is the only reason I could see when a change made things worse.</p>
+
+          <h2 id="engineering">Engineering notes</h2>
+          <h3>The JavaScript tokenizer matches the Python reference</h3>
+          <p>I converted the model with a script and re-implemented its tokenizer (normalization, punctuation splitting, WordPiece) in JavaScript. I did not trust it by eye: on 24 samples the token output is identical to the Python reference, and embedding cosine similarity is at least 0.998 after quantization. Both checks are tests.</p>
+          <h3>False positives were the real work</h3>
+          <p>The first versions flagged bookmarks just because two folders shared a website (an intranet host, a ticketing portal). The fixes: a website that appears in several folders is treated as a platform and left out of the compared text, generic path words are ignored, and a suggestion has to share at least two content words with the target. Regression tests use fictional data so the lesson stays in the suite.</p>
+          <h3>Privacy is enforced, not promised</h3>
+          <p>The extension asks for <code>bookmarks</code> and <code>storage</code> only. A test fails if any file other than the model loader uses <code>fetch</code> or any network API, and the loader refuses a different origin. Browsing history is an optional permission, requested only if the user presses a button.</p>
+          <h3>Undo has a quirk</h3>
+          <p>Inside one folder Chrome reads a move's index as a position in the list <em>before</em> the move, so restoring an item downward needs one more. I mimicked that rule in the test double, and confirmed the test fails if I remove the adjustment, before trusting it.</p>
+          <h3>Don't guess from missing data</h3>
+          <p>"Put what you use most at the top" and "Archive" use the last-opened date Chrome keeps per bookmark. Where that date is missing it could mean "never opened" or "not tracked", so the Archive suggestion switches itself off unless enough bookmarks carry a date.</p>
+
+          <h2 id="failures">What went wrong first</h2>
+          <ul>
+            <li>I told the user a model probe had matched a product name to the right folder in every model. It had not. I re-measured, found the model did not know that product, and corrected the claim. The case is still in the test suite.</li>
+            <li>A line I added to reload the model ran after every apply, undo and setting change instead of once at startup. A test now guards it.</li>
+            <li>A "most used on the bar" feature I proposed was not what was asked for. I dropped it and rebuilt around "top of each folder".</li>
+          </ul>
+
+          <h2 id="limits">Limits</h2>
+          <div class="callout limits">
+            <b class="k">Honest limits</b>
+            <ul>
+              <li>The two libraries are invented. This is not a benchmark on real bookmark collections, and I make no accuracy claim for yours.</li>
+              <li>The model knows everyday topics. It has not heard of newer or very specific products, so it reads "Copilot Studio" as "GitHub Copilot". Fixing that takes a large language model, which would mean sending bookmarks to a server. I chose not to.</li>
+              <li>Folders with fewer than four bookmarks cannot be judged.</li>
+              <li>Chrome has no hidden bookmarks; "Archive" is just off the bar.</li>
+            </ul>
+          </div>
+
+          <figure>
+            <div class="fig-img"><img src="../assets/img/marksly-demo.gif" width="960" height="600" alt="Animated demo: Marksly lists suggestions, the user selects everything, confirms, and sees the finished run" loading="lazy"></div>
+            <figcaption>A full run on the demo library: review, confirm, done. Undo is one click.</figcaption>
+          </figure>
+
+          <div class="next">
+            <a class="btn btn-ghost" href="../work/team-agent.html">&larr; Team analytics agent</a>
+            <a class="btn btn-primary" href="../lab/marksly/organizer.html">Open the live demo &rarr;</a>
+          </div>
+        </article>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="footer">
+    <div class="wrap">
+      <div class="footer-grid">
+        <h2>Hiring for an agent role? I'd like to hear about it.</h2>
+        <ul>
+          <li><a href="#" data-mail>Email</a><noscript> jayson.qin [at] hotmail [dot] com</noscript></li>
+          <li><a href="https://www.linkedin.com/in/jaysonqin/" rel="me noopener">LinkedIn</a></li>
+          <li><a href="https://github.com/qjl0629" rel="me noopener">GitHub</a></li>
+          <li><a href="https://github.com/qjl0629/agent-playbook" rel="noopener">The playbook, on GitHub</a></li>
+        </ul>
+      </div>
+      <small>&copy; 2026 Jayson Qin. Vancouver, BC. Written by hand: HTML, CSS and a little JavaScript. No trackers, no cookies. Demos and data on this site are synthetic; nothing here comes from an employer.</small>
+    </div>
+  </footer>
+  <script src="../assets/js/site.js" defer></script>
+
+</body>
+</html>

@@ -1,0 +1,81 @@
+<!--
+title: Proving a model swap is safe | Jayson Qin
+description: Case study: an evaluation harness for replacing the model behind a document-extraction step. Golden set, schema validation, normalization, field-level parity with a mismatch taxonomy, per-class gating and a cost model.
+path: work/extraction-parity.html
+nav: work
+-->
+    <div class="wrap">
+      <section class="case-hero">
+        <p class="crumb"><a href="{{base}}index.html#work">Work</a> / Model-swap parity</p>
+        <h1>Proving a model swap is safe.</h1>
+        <p class="lede">A pipeline extracts structured fields from documents with an LLM step. The step is being replaced with something cheaper. Is the new one safe to ship? This answers it with evidence instead of a few eyeballed samples.</p>
+        <div class="link-row">
+          <a class="btn btn-primary" href="https://github.com/qjl0629/extraction-agent-demo" rel="noopener">Source on GitHub</a>
+        </div>
+        <dl class="meta-row">
+          <div><dt>Role</dt><dd>Sole author</dd></div>
+          <div><dt>Stack</dt><dd>Python 3.9, standard library only</dd></div>
+          <div><dt>Data</dt><dd>12 synthetic documents, golden records, two candidate fixtures</dd></div>
+          <div><dt>Tests</dt><dd>82</dd></div>
+        </dl>
+      </section>
+
+      <div class="case-body">
+        <nav class="toc" aria-label="On this page">
+          <p>On this page</p>
+          <ol>
+            <li><a href="#origin">Where it came from</a></li>
+            <li><a href="#method">Method</a></li>
+            <li><a href="#result">Result</a></li>
+            <li><a href="#class">Why a gate per class</a></li>
+            <li><a href="#limits">Limits</a></li>
+          </ol>
+        </nav>
+
+        <article class="prose">
+          <h2 id="origin">Where it came from</h2>
+          <p>In a real automation, a document-extraction step ran on a metered prompt builder. I replaced it with a general agent runtime that costs less per run. The new step produced the same output on the test I ran, which is not the same as knowing it would on every document. This repository is the version of that check I would want next time: repeatable, and strict where it should be.</p>
+          <p>The documents here are synthetic, and the candidate outputs are hand-written fixtures standing in for model output. No live model is called.</p>
+
+          <h2 id="method">Method</h2>
+          <ol>
+            <li><strong>Fix the expected output first.</strong> 12 golden records define what correct means before any candidate is judged.</li>
+            <li><strong>Validate against a schema.</strong> A small validator returns structured errors with paths and codes. The same schema is the contract for the golden set and the candidates.</li>
+            <li><strong>Normalize, then compare.</strong> <code>4,5 out of 5</code>, <code>14 Mar 2025</code> and <code>N/A</code> are cosmetic. A rating of 9.0 on a 10 scale where the golden says 4.5 on a 5 scale is not, and normalization must not hide it.</li>
+            <li><strong>Classify every mismatch.</strong> Missing, extra (a hallucinated field), wrong type, wrong value, or format only.</li>
+            <li><strong>Gate per field class.</strong> Not just an overall number.</li>
+            <li><strong>Reason about cost separately.</strong> A parametric model with user-supplied prices compares per-call and flat-capacity pricing and finds the break-even volume. The numbers in the docs are labelled illustrative placeholders.</li>
+          </ol>
+
+          <h2 id="result">Result</h2>
+          <p>Real output of <code>python3 -m extraction_demo summary</code>:</p>
+          <table class="t">
+            <thead><tr><th>Source</th><th>Gate (0.98)</th><th>Docs exact</th><th>Field accuracy</th><th>Strict accuracy</th><th>Schema-valid</th></tr></thead>
+            <tbody>
+              <tr><td>candidate_a</td><td><span class="chip pass">PASS</span></td><td>11/12</td><td>0.992</td><td>0.856</td><td>12/12</td></tr>
+              <tr><td>candidate_b</td><td><span class="chip fail">FAIL</span></td><td>4/12</td><td>0.932</td><td>0.902</td><td>9/12</td></tr>
+              <tr><td>rule-based baseline</td><td><span class="chip fail">FAIL</span></td><td>9/12</td><td>0.977</td><td>0.977</td><td>12/12</td></tr>
+            </tbody>
+          </table>
+          <p>The gap between field accuracy and strict accuracy for <code>candidate_a</code> (0.992 against 0.856) is the point of normalizing: most of its differences are formatting, and strict comparison would have rejected a good candidate. <code>candidate_b</code> carries the failures I expect from a swap: a dropped participant count, a rating on the wrong scale, a hallucinated field, a wrong year, and two reviewers merged into one string.</p>
+
+          <h2 id="class">Why a gate per class</h2>
+          <p>The rule-based baseline scores 0.977 overall and still fails the gate, because it is wrong on a numeric field and an identity field. An overall number averages a wrong recommendation into 131 right cells. In a pipeline that feeds decisions, one wrong rating or date matters more than a slightly paraphrased finding, so the gate has a strict floor for identity, categorical and numeric fields and a looser one for narrative text.</p>
+
+          <h2 id="limits">Limits</h2>
+          <div class="callout limits">
+            <b class="k">Honest limits</b>
+            <ul>
+              <li>12 documents and synthetic fixtures. It demonstrates the method, not any model's accuracy.</li>
+              <li>The baseline was written against the same 12 documents it is scored on, so its 0.977 is optimistic.</li>
+              <li>A live model varies from run to run. The next step is to run each document several times and report agreement; this repository does not do that yet.</li>
+              <li>The thresholds are illustrative. Real ones come from the cost of each error type.</li>
+            </ul>
+          </div>
+          <div class="next">
+            <a class="btn btn-ghost" href="{{base}}work/agent-tool-safety.html">&larr; Safe writes</a>
+            <a class="btn btn-primary" href="{{base}}index.html#training">How I train my agent &rarr;</a>
+          </div>
+        </article>
+      </div>
+    </div>

@@ -1,0 +1,45 @@
+<!--
+title: Learning loop: which corrections become rules? | Jayson Qin
+description: An interactive walk through how my personal AI agent turns corrections into rules. Seven real kinds of correction, each judged against a four-part quality bar. Four become rules. Three don't.
+path: lab/learning-loop.html
+nav: lab
+scripts_extra: <script src="{{base}}assets/js/loop.js" defer></script>
+-->
+    <div class="wrap">
+      <section class="lab-head">
+        <p class="eyebrow">Lab</p>
+        <h1>Which corrections become rules?</h1>
+        <p class="lede">My own agent has about 130 rules, and most of what I tell it never becomes one. Pick a correction and see how it is judged. These are real kinds of corrections, generalized; the quality bar is the one my agent actually uses.</p>
+        <div class="link-row">
+          <a class="btn btn-ghost" href="{{base}}lab/eval-lab.html">Previous: the eval lab</a>
+          <a class="btn btn-ghost" href="https://github.com/qjl0629/agent-playbook/blob/main/docs/02-learning-loop.md" rel="noopener">Read the method</a>
+        </div>
+      </section>
+
+      <div class="panel" id="loop" style="margin-top:28px">
+        <div class="loop">
+          <ul class="loop-list" role="tablist" aria-label="Corrections" data-list></ul>
+          <div class="loop-out" data-out aria-live="polite"></div>
+        </div>
+        <div class="legend"><span data-tally>Pick a correction.</span></div>
+      </div>
+      <noscript><p class="muted" style="margin-top:16px">This page needs JavaScript. The method is written up in the <a href="https://github.com/qjl0629/agent-playbook/blob/main/docs/02-learning-loop.md" rel="noopener">playbook</a>.</p></noscript>
+
+      <div class="prose" style="margin-top:40px">
+        <h2>The quality bar</h2>
+        <p>A correction becomes a rule only if it is all four of these:</p>
+        <ul>
+          <li><strong>General</strong>: it would help in a future session, not just this one.</li>
+          <li><strong>Specific</strong>: concrete enough to act on.</li>
+          <li><strong>Has a concrete example</strong>: a right-versus-wrong case. A rule without one gets paraphrased differently on every turn.</li>
+          <li><strong>Not already covered</strong>: a duplicate adds noise and a chance to contradict.</li>
+        </ul>
+        <p>Then the agent writes the rule without being asked, and tells me in one line what it captured so I can veto it. One-offs are done and forgotten.</p>
+        <h2>Why be this strict</h2>
+        <p>A rule file that records everything is one nobody, including the agent, can follow. The bar keeps it short enough to keep following, and the <a href="{{base}}lab/eval-lab.html">evaluation set</a> is what tells me when a new rule has quietly broken an old behavior.</p>
+        <div class="callout limits">
+          <b class="k">Honest limits</b>
+          <p>I apply the bar by judgment, with the agent's help. It is not automated, and I have no measurement of how often I judge it wrong. The corrections here are generalized from real ones and simplified to fit on a page.</p>
+        </div>
+      </div>
+    </div>

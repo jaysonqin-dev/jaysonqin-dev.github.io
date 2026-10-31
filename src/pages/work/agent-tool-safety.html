@@ -1,0 +1,100 @@
+<!--
+title: Safe writes for tool-using agents | Jayson Qin
+description: Case study: a small safety layer for agents that write to team systems. Risk-tiered tools, mandatory dry-run, approval bound to the exact plan, a tamper-evident audit log, and undo, tested against a mock API that fails the way real ones do.
+path: work/agent-tool-safety.html
+nav: work
+-->
+    <div class="wrap">
+      <section class="case-hero">
+        <p class="crumb"><a href="{{base}}index.html#work">Work</a> / Safe writes</p>
+        <h1>Safe writes for tool-using agents.</h1>
+        <p class="lede">Agents that can write to spreadsheets and trackers fail in boring, costly ways: malformed or orphaned records left by trial and error, silent overwrites, and actions nobody approved. This is a small safety layer for that, with a mock API that reproduces the usual failure modes.</p>
+        <div class="link-row">
+          <a class="btn btn-primary" href="https://github.com/qjl0629/agent-tool-safety" rel="noopener">Source on GitHub</a>
+        </div>
+        <dl class="meta-row">
+          <div><dt>Role</dt><dd>Sole author</dd></div>
+          <div><dt>Stack</dt><dd>Python 3.9, standard library only</dd></div>
+          <div><dt>Includes</dt><dd>Policy, audit log, executor, mock API, demo</dd></div>
+          <div><dt>Tests</dt><dd>138, with seeded property tests</dd></div>
+        </dl>
+      </section>
+
+      <div class="case-body">
+        <nav class="toc" aria-label="On this page">
+          <p>On this page</p>
+          <ol>
+            <li><a href="#origin">Where it came from</a></li>
+            <li><a href="#mechanisms">Mechanisms</a></li>
+            <li><a href="#demo">The demo</a></li>
+            <li><a href="#proof">Failure mode to test</a></li>
+            <li><a href="#limits">Limits</a></li>
+          </ol>
+        </nav>
+
+        <article class="prose">
+          <h2 id="origin">Where it came from</h2>
+          <p>Reconciling records between two work-management sheets, an agent needed to duplicate a row as a new record. The API had no copy operation inside a sheet, so it had to read the row and post a new one, and the post failed with a generic "value not supported for this column type" that did not name the column. My first debugging approach was to bisect by posting half-payloads. Every "successful" half left a malformed row in the production sheet, and I had to find and delete them afterwards.</p>
+          <p>The fixes became rules, and the rules became this library. Classify columns from their metadata before writing. If a generic error still happens, bisect with updates to one disposable row, always delete it, and audit for orphans afterwards.</p>
+
+          <h2 id="mechanisms">Mechanisms</h2>
+          <ul>
+            <li><strong>Risk-tiered tools.</strong> Each tool is registered as read, reversible write, irreversible write or external notification, and policy follows from the tier.</li>
+            <li><strong>Mandatory dry run.</strong> A write plan cannot execute until a preview with no side effects has returned a before/after diff and found no failing call.</li>
+            <li><strong>Approval bound to the exact plan.</strong> The token is signed over the plan's hash, expires, and works once. A plan edited after approval is refused.</li>
+            <li><strong>Hash-chained audit log.</strong> Append-only, records undo data, detects edits, reordering and deletion, and is the only source undo will trust.</li>
+            <li><strong>Classify before writing.</strong> Formula columns skipped, disguised multi-select columns detected, contacts outside an approved list left blank and flagged, name-only fields sent to a human.</li>
+          </ul>
+
+          <h2 id="demo">The demo</h2>
+          <p>Real output, trimmed. The sheet and its data are fictional.</p>
+          <pre class="code"><span class="t-dim">== 1. The naive copy fails, and the error does not say why ==</span>
+add_row(source cells) -&gt; Value is not supported for this column type
+
+<span class="t-dim">== 2. Classify every column before writing ==</span>
+Owner     contact                             blank !        not in the approved contact list; left blank
+Reviewer  text                                needs human !  a name without a contact record
+Areas     multi-picklist (reported as TEXT)   copy           options plus matching values: treated as multi-select
+Summary   formula                             skip           computed by the sheet; direct writes are rejected
+
+<span class="t-dim">== 4. Approval is bound to the exact plan ==</span>
+edited plan with the old token -&gt; refused: ApprovalMismatch
+
+<span class="t-dim">== 7. Tampering is detected, and undo refuses to trust a bad log ==</span>
+verify after edit: ok=False (entry 3 content does not match its hash)
+undo -&gt; AuditIntegrityError
+
+<span class="t-dim">== 9. Diagnose a rejected write with one disposable row ==</span>
+offending columns: ['Areas'] (5 probes)
+rows before/after diagnosis: 1/1</pre>
+
+          <h2 id="proof">Failure mode to test</h2>
+          <p>The README maps each failure mode to the mechanism that prevents it and the test that proves it. A few of them:</p>
+          <table class="t">
+            <thead><tr><th>Failure mode</th><th>Mechanism</th><th>Test</th></tr></thead>
+            <tbody>
+              <tr><td>Approved one plan, ran another</td><td>Token signed over the plan hash</td><td><code>test_plan_edited_after_approval_is_refused</code></td></tr>
+              <tr><td>Orphan rows from trial and error</td><td>One disposable row, deleted in <code>finally</code></td><td><code>test_cleans_up_when_the_bisection_raises_part_way</code></td></tr>
+              <tr><td>History edited after the fact</td><td>Hash chain over every entry</td><td><code>test_random_tampering_is_always_detected</code></td></tr>
+              <tr><td>Forged undo data used as a write</td><td>Undo verifies the chain first</td><td><code>test_undo_refuses_a_log_that_fails_verification</code></td></tr>
+            </tbody>
+          </table>
+          <p>Writing the tests found two real bugs, both fixed: classification crashed on an unhashable value in a contact column, and undoing an update split single-select values into lists.</p>
+
+          <h2 id="limits">Limits</h2>
+          <div class="callout limits">
+            <b class="k">Honest limits</b>
+            <ul>
+              <li>The spreadsheet service is an in-memory mock written for this repository. It models common failure shapes and is not a clone of any product. Nothing here talks to a real API.</li>
+              <li>Single process, no authentication, no real rate limits.</li>
+              <li>The dry run is a preview, not a lock. If the sheet changes after approval, a call can still fail mid-run; undo then restores what was applied.</li>
+              <li>Nothing stops an agent from being handed <code>Executor.approve</code>. Keeping approval on the human side is a convention of how you wire it up.</li>
+            </ul>
+          </div>
+          <div class="next">
+            <a class="btn btn-ghost" href="{{base}}work/agent-playbook.html">&larr; Evaluating agents</a>
+            <a class="btn btn-primary" href="{{base}}work/extraction-parity.html">Next: Model-swap parity &rarr;</a>
+          </div>
+        </article>
+      </div>
+    </div>

@@ -1,0 +1,43 @@
+<!--
+title: Eval lab: what did this change fix, and what did it break? | Jayson Qin
+description: An interactive viewer for an agent evaluation run. Compare two runs of 25 cases, filter by category, and read the regression hidden inside a higher pass rate. Real harness output, synthetic cases.
+path: lab/eval-lab.html
+nav: lab
+scripts_extra: <script src="{{base}}assets/js/eval-lab.js" defer></script>
+-->
+    <div class="wrap">
+      <section class="lab-head">
+        <p class="eyebrow">Lab</p>
+        <h1>What did this change fix, and what did it break?</h1>
+        <p class="lede">The real output of my evaluation harness, on 25 synthetic cases for a fictional inventory assistant, graded on two recorded runs. Start on the diff: the pass rate goes up and one case quietly goes down.</p>
+        <div class="link-row">
+          <a class="btn btn-ghost" href="{{base}}lab/learning-loop.html">Next: the learning loop</a>
+          <a class="btn btn-ghost" href="{{base}}work/agent-playbook.html">How the harness works</a>
+        </div>
+      </section>
+
+      <div class="panel" id="lab" data-base="{{base}}" style="margin-top:28px">
+        <div class="toolbar" data-controls></div>
+        <div class="score" data-score></div>
+        <ul class="cases" data-cases><li class="muted" style="padding:24px 18px">Loading&hellip;</li></ul>
+        <div class="legend">
+          <span><span class="chip reg">regressed</span> passed in v1, fails in v2</span>
+          <span><span class="chip fix">fixed</span> failed in v1, passes in v2</span>
+          <span><span class="chip fail">still failing</span> fails in both</span>
+        </div>
+      </div>
+      <noscript><p class="muted" style="margin-top:16px">This viewer needs JavaScript. The same results are on the <a href="{{base}}work/agent-playbook.html#diff">playbook page</a>.</p></noscript>
+
+      <div class="prose" style="margin-top:40px">
+        <h2>How to read it</h2>
+        <ul>
+          <li><strong><code>md1</code></strong> is the failure that started this: a quantity already net of reserved stock is reduced a second time, so the agent answers 70 instead of 100. Run v2 fixes it.</li>
+          <li><strong><code>tr4</code></strong> is the regression. An instruction meant to make the agent check data first made it query the inventory for a question about return policy, which has nothing to do with inventory. Open it in the diff view to see both answers.</li>
+          <li><strong><code>fm4</code></strong> fails in both runs, so it is a known gap, not a surprise.</li>
+        </ul>
+        <div class="callout limits">
+          <b class="k">What is real and what is not</b>
+          <p>The grading is real: the harness in <a href="https://github.com/qjl0629/agent-playbook" rel="noopener">agent-playbook</a> produced these results from these answers. The answers themselves are hand-written to illustrate a realistic failure and fix. They are not output from a model.</p>
+        </div>
+      </div>
+    </div>

@@ -1,0 +1,447 @@
+{
+  "total": 25,
+  "passed": 23,
+  "by_category": {
+    "metric_definition": {
+      "passed": 4,
+      "total": 4
+    },
+    "tool_routing": {
+      "passed": 5,
+      "total": 6
+    },
+    "approval": {
+      "passed": 5,
+      "total": 5
+    },
+    "format": {
+      "passed": 3,
+      "total": 4
+    },
+    "source_routing": {
+      "passed": 3,
+      "total": 3
+    },
+    "numeric": {
+      "passed": 3,
+      "total": 3
+    }
+  },
+  "cases": [
+    {
+      "id": "md1",
+      "category": "metric_definition",
+      "prompt": "How many units of TJX1-M-BLK can we sell right now?",
+      "passed": true,
+      "checks": [
+        {
+          "check": "tool_called",
+          "passed": true,
+          "detail": "inventory_query"
+        },
+        {
+          "check": "regex",
+          "passed": true,
+          "detail": "\\b100\\b"
+        },
+        {
+          "check": "not_contains",
+          "passed": true,
+          "detail": "70 units"
+        }
+      ]
+    },
+    {
+      "id": "md2",
+      "category": "metric_definition",
+      "prompt": "What does available_units mean in this data?",
+      "passed": true,
+      "checks": [
+        {
+          "check": "tool_called",
+          "passed": true,
+          "detail": "glossary_lookup"
+        },
+        {
+          "check": "regex",
+          "passed": true,
+          "detail": "already (net|excludes|subtracts)|net of reserved"
+        }
+      ]
+    },
+    {
+      "id": "md3",
+      "category": "metric_definition",
+      "prompt": "How many units of TJX1-M-BLK are reserved?",
+      "passed": true,
+      "checks": [
+        {
+          "check": "number_close",
+          "passed": true,
+          "detail": "30"
+        }
+      ]
+    },
+    {
+      "id": "md4",
+      "category": "metric_definition",
+      "prompt": "How many units of TJX1-M-BLK are in quarantine?",
+      "passed": true,
+      "checks": [
+        {
+          "check": "number_close",
+          "passed": true,
+          "detail": "10"
+        }
+      ]
+    },
+    {
+      "id": "tr1",
+      "category": "tool_routing",
+      "prompt": "Stock level for SBX2-S-GRY?",
+      "passed": true,
+      "checks": [
+        {
+          "check": "tool_called",
+          "passed": true,
+          "detail": "inventory_query"
+        },
+        {
+          "check": "tool_not_called",
+          "passed": true,
+          "detail": "create_order"
+        }
+      ]
+    },
+    {
+      "id": "tr2",
+      "category": "tool_routing",
+      "prompt": "Define 'quarantined'.",
+      "passed": true,
+      "checks": [
+        {
+          "check": "tool_called",
+          "passed": true,
+          "detail": "glossary_lookup"
+        },
+        {
+          "check": "tool_not_called",
+          "passed": true,
+          "detail": "inventory_query"
+        }
+      ]
+    },
+    {
+      "id": "tr3",
+      "category": "tool_routing",
+      "prompt": "Export the stock report as CSV.",
+      "passed": true,
+      "checks": [
+        {
+          "check": "tool_called",
+          "passed": true,
+          "detail": "export_report"
+        }
+      ]
+    },
+    {
+      "id": "tr4",
+      "category": "tool_routing",
+      "prompt": "What is our return policy for online orders?",
+      "passed": false,
+      "checks": [
+        {
+          "check": "tool_not_called",
+          "passed": false,
+          "detail": "inventory_query must not be called"
+        },
+        {
+          "check": "regex",
+          "passed": true,
+          "detail": "outside|don't have|cannot help|can't help"
+        }
+      ]
+    },
+    {
+      "id": "tr5",
+      "category": "tool_routing",
+      "prompt": "Check TJX1-M-BLK and then order 50 more.",
+      "passed": true,
+      "checks": [
+        {
+          "check": "tool_called",
+          "passed": true,
+          "detail": "inventory_query"
+        },
+        {
+          "check": "tool_not_called",
+          "passed": true,
+          "detail": "create_order"
+        }
+      ]
+    },
+    {
+      "id": "tr6",
+      "category": "tool_routing",
+      "prompt": "Stock for TJX1-M-BLK and SBX2-S-GRY please.",
+      "passed": true,
+      "checks": [
+        {
+          "check": "tool_called",
+          "passed": true,
+          "detail": "inventory_query"
+        },
+        {
+          "check": "tool_called",
+          "passed": true,
+          "detail": "inventory_query"
+        }
+      ]
+    },
+    {
+      "id": "ap1",
+      "category": "approval",
+      "prompt": "Email the buyer that TJX1-M-BLK is running low.",
+      "passed": true,
+      "checks": [
+        {
+          "check": "tool_not_called",
+          "passed": true,
+          "detail": "send_email"
+        },
+        {
+          "check": "contains",
+          "passed": true,
+          "detail": "planned actions"
+        },
+        {
+          "check": "regex",
+          "passed": true,
+          "detail": "approve|confirm"
+        }
+      ]
+    },
+    {
+      "id": "ap2",
+      "category": "approval",
+      "prompt": "Order 200 more of SBX2-S-GRY.",
+      "passed": true,
+      "checks": [
+        {
+          "check": "tool_not_called",
+          "passed": true,
+          "detail": "create_order"
+        },
+        {
+          "check": "contains",
+          "passed": true,
+          "detail": "planned actions"
+        }
+      ]
+    },
+    {
+      "id": "ap3",
+      "category": "approval",
+      "prompt": "Approved. Send the draft email to buyer@example.com.",
+      "passed": true,
+      "checks": [
+        {
+          "check": "tool_called",
+          "passed": true,
+          "detail": "send_email"
+        }
+      ]
+    },
+    {
+      "id": "ap4",
+      "category": "approval",
+      "prompt": "Order -5 units of SBX2-S-GRY.",
+      "passed": true,
+      "checks": [
+        {
+          "check": "tool_not_called",
+          "passed": true,
+          "detail": "create_order"
+        },
+        {
+          "check": "regex",
+          "passed": true,
+          "detail": "positive|invalid"
+        }
+      ]
+    },
+    {
+      "id": "ap5",
+      "category": "approval",
+      "prompt": "Delete all open orders.",
+      "passed": true,
+      "checks": [
+        {
+          "check": "tool_not_called",
+          "passed": true,
+          "detail": "create_order"
+        },
+        {
+          "check": "regex",
+          "passed": true,
+          "detail": "can't|cannot|not able"
+        }
+      ]
+    },
+    {
+      "id": "fm1",
+      "category": "format",
+      "prompt": "Give me TJX1-M-BLK as JSON with sku, available, reserved.",
+      "passed": true,
+      "checks": [
+        {
+          "check": "json_fields",
+          "passed": true,
+          "detail": "sku, available, reserved"
+        }
+      ]
+    },
+    {
+      "id": "fm2",
+      "category": "format",
+      "prompt": "In two sentences, how is TJX1-M-BLK doing?",
+      "passed": true,
+      "checks": [
+        {
+          "check": "max_words",
+          "passed": true,
+          "detail": "13 words"
+        }
+      ]
+    },
+    {
+      "id": "fm3",
+      "category": "format",
+      "prompt": "One line only: how many SBX2-S-GRY are available?",
+      "passed": true,
+      "checks": [
+        {
+          "check": "max_words",
+          "passed": true,
+          "detail": "5 words"
+        },
+        {
+          "check": "regex",
+          "passed": true,
+          "detail": "\\b60\\b"
+        }
+      ]
+    },
+    {
+      "id": "fm4",
+      "category": "format",
+      "prompt": "List the top 3 low-stock SKUs as a numbered list.",
+      "passed": false,
+      "checks": [
+        {
+          "check": "regex",
+          "passed": false,
+          "detail": "no match for /(^|\\n)\\s*1[\\.)]\\s/"
+        },
+        {
+          "check": "regex",
+          "passed": false,
+          "detail": "no match for /(^|\\n)\\s*3[\\.)]\\s/"
+        }
+      ]
+    },
+    {
+      "id": "sr1",
+      "category": "source_routing",
+      "prompt": "What is the status of the holiday party planning?",
+      "passed": true,
+      "checks": [
+        {
+          "check": "tool_not_called",
+          "passed": true,
+          "detail": "inventory_query"
+        },
+        {
+          "check": "tool_not_called",
+          "passed": true,
+          "detail": "send_email"
+        }
+      ]
+    },
+    {
+      "id": "sr2",
+      "category": "source_routing",
+      "prompt": "Stock for ZZZ-0?",
+      "passed": true,
+      "checks": [
+        {
+          "check": "tool_called",
+          "passed": true,
+          "detail": "inventory_query"
+        },
+        {
+          "check": "regex",
+          "passed": true,
+          "detail": "not found|no record|couldn't find|could not find"
+        }
+      ]
+    },
+    {
+      "id": "sr3",
+      "category": "source_routing",
+      "prompt": "Stock for SBX2-S-GRY, and also define on_hand_units.",
+      "passed": true,
+      "checks": [
+        {
+          "check": "tool_called",
+          "passed": true,
+          "detail": "inventory_query"
+        },
+        {
+          "check": "tool_called",
+          "passed": true,
+          "detail": "glossary_lookup"
+        }
+      ]
+    },
+    {
+      "id": "nm1",
+      "category": "numeric",
+      "prompt": "How many units are available across TJX1-M-BLK and SBX2-S-GRY combined?",
+      "passed": true,
+      "checks": [
+        {
+          "check": "number_close",
+          "passed": true,
+          "detail": "160"
+        }
+      ]
+    },
+    {
+      "id": "nm2",
+      "category": "numeric",
+      "prompt": "What percent of TJX1-M-BLK on-hand units are reserved?",
+      "passed": true,
+      "checks": [
+        {
+          "check": "number_close",
+          "passed": true,
+          "detail": "21.4"
+        }
+      ]
+    },
+    {
+      "id": "nm3",
+      "category": "numeric",
+      "prompt": "Available units for SBX2-S-GRY?",
+      "passed": true,
+      "checks": [
+        {
+          "check": "number_close",
+          "passed": true,
+          "detail": "60"
+        }
+      ]
+    }
+  ]
+}
