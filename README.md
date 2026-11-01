@@ -30,4 +30,8 @@ Moving to a custom domain: `BASE_URL=https://example.com python3 tools/build.py`
 ## Data on this site
 
 Demos, transcripts and logs are synthetic or hand-written and are labelled that way where they appear.
-Nothing here comes from an employer.
+The case studies describe methods from my own work and contain no company data.
+
+## Fonts
+
+Geist and Geist Mono by Vercel, self-hosted under the SIL Open Font License (`assets/fonts/LICENSE-Geist.txt`).
