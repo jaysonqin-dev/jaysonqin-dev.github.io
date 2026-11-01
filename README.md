@@ -3,7 +3,7 @@
 Source for my portfolio: applied AI engineering work on agents, evaluation and deployment.
 Plain HTML, CSS and a little JavaScript. No framework, no build step for visitors, no trackers.
 
-Live: https://qjl0629.github.io
+Live: https://jaysonqin-dev.github.io
 
 ## What is here
 

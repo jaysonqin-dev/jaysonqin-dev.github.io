@@ -4,7 +4,7 @@
 src/layout.html wraps every page in src/pages/**. A page starts with an HTML comment of `key: value`
 lines (title, description, path, nav, head_extra, scripts_extra) followed by its content.
 
-    python3 tools/build.py                       # for https://qjl0629.github.io
+    python3 tools/build.py                       # for https://jaysonqin-dev.github.io
     BASE_URL=https://example.dev python3 tools/build.py   # after moving to a custom domain
 
 Also writes sitemap.xml and robots.txt for that base URL.
@@ -20,7 +20,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "src"
-BASE_URL = os.environ.get("BASE_URL", "https://qjl0629.github.io").rstrip("/")
+BASE_URL = os.environ.get("BASE_URL", "https://jaysonqin-dev.github.io").rstrip("/")
 NAV_KEYS = ("work", "agents", "lab", "about")
 HEADER = re.compile(r"\A\s*<!--\s*(.*?)\s*-->\s*", re.DOTALL)
 
