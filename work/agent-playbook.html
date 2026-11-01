@@ -91,6 +91,7 @@ v1 -&gt; v2
   regressed: tr4
   fixed: md1, tr3, ap1, fm3, sr2, nm1
   still_failing: nm4</pre>
+          <p class="muted">Case ids are a category plus a number: <code>md</code> metric definition, <code>tr</code> tool routing, <code>ap</code> approval, <code>fm</code> format, <code>sr</code> source routing, <code>nm</code> numeric.</p>
           <p>The pass rate rose 20 points and a regression sits inside it. An instruction meant to make the agent check the data first fixed six cases, and made it query the inventory for an out-of-scope question (<code>tr4</code>). If I had looked only at the pass rate I would have shipped it. <code>--fail-on-regression</code> turns that into a hard gate.</p>
           <p>The same run also shows the failure that started this: <code>md1</code> is the case where a quantity already net of reserved stock gets reduced a second time.</p>
 
