@@ -12,6 +12,7 @@ Also writes sitemap.xml and robots.txt for that base URL.
 
 from __future__ import annotations
 
+import hashlib
 import html
 import os
 import re
@@ -24,6 +25,19 @@ SRC = ROOT / "src"
 BASE_URL = os.environ.get("BASE_URL", "https://jaysonqin-dev.github.io").rstrip("/")
 NAV_KEYS = ("work", "agents", "lab", "about")
 HEADER = re.compile(r"\A\s*<!--\s*(.*?)\s*-->\s*", re.DOTALL)
+
+
+def asset_version() -> str:
+    """Short hash of the CSS and JS, appended as ?v= so browsers never serve a stale copy."""
+    digest = hashlib.sha1()
+    for folder, pattern in (("assets/css", "*.css"), ("assets/js", "*.js")):
+        for path in sorted((ROOT / folder).glob(pattern)):
+            digest.update(path.name.encode())
+            digest.update(path.read_bytes())
+    return digest.hexdigest()[:8]
+
+
+ASSET_V = asset_version()
 
 
 def parse_page(path: Path):
@@ -44,7 +58,7 @@ def parse_page(path: Path):
 
 def extra(meta: dict, key: str, base: str) -> str:
     value = meta.get(key, "")
-    return value.replace("{{base}}", base).replace("{{site}}", BASE_URL)
+    return value.replace("{{base}}", base).replace("{{site}}", BASE_URL).replace("{{v}}", ASSET_V)
 
 
 def render(layout: str, meta: dict, content: str) -> str:
@@ -59,6 +73,7 @@ def render(layout: str, meta: dict, content: str) -> str:
         "description": html.escape(html.unescape(meta["description"]), quote=True),
         "base": base,
         "site": BASE_URL,
+        "v": ASSET_V,
         "canonical": canonical,
         "content": content.rstrip() + "\n",
         "head_extra": extra(meta, "head_extra", base),

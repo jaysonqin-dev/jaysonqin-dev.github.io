@@ -6,7 +6,7 @@
 
   var base = app.getAttribute("data-base") || "../";
   function get(path, kind) {
-    return fetch(base + path).then(function (r) {
+    return fetch(base + path, { cache: "no-cache" }).then(function (r) {
       if (!r.ok) throw new Error(path + ": " + r.status);
       return kind === "json" ? r.json() : r.text();
     });
