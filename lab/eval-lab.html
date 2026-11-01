@@ -76,7 +76,7 @@
         <ul>
           <li><strong><code>md1</code></strong> is the failure that started this: a quantity already net of reserved stock is reduced a second time, so the agent answers 70 instead of 100. Run v2 fixes it.</li>
           <li><strong><code>tr4</code></strong> is the regression. An instruction meant to make the agent check data first made it query the inventory for a question about return policy, which has nothing to do with inventory. Open it in the diff view to see both answers.</li>
-          <li><strong><code>fm4</code></strong> fails in both runs, so it is a known gap, not a surprise.</li>
+          <li><strong><code>nm4</code></strong> fails in both runs. The tool returns stock one page at a time, so the agent ranks the first page and answers as if it had seen everything, without saying there is more. The fix is a rule to read to the last page or to say the list is partial. It is a known gap, not a surprise.</li>
         </ul>
         <div class="callout limits">
           <b class="k">What is real and what is not</b>

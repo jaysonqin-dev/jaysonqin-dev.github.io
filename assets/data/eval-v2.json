@@ -16,7 +16,7 @@
     },
     "format": {
       "passed": 3,
-      "total": 4
+      "total": 3
     },
     "source_routing": {
       "passed": 3,
@@ -24,7 +24,7 @@
     },
     "numeric": {
       "passed": 3,
-      "total": 3
+      "total": 4
     }
   },
   "cases": [
@@ -333,24 +333,6 @@
       ]
     },
     {
-      "id": "fm4",
-      "category": "format",
-      "prompt": "List the top 3 low-stock SKUs as a numbered list.",
-      "passed": false,
-      "checks": [
-        {
-          "check": "regex",
-          "passed": false,
-          "detail": "no match for /(^|\\n)\\s*1[\\.)]\\s/"
-        },
-        {
-          "check": "regex",
-          "passed": false,
-          "detail": "no match for /(^|\\n)\\s*3[\\.)]\\s/"
-        }
-      ]
-    },
-    {
       "id": "sr1",
       "category": "source_routing",
       "prompt": "What is the status of the holiday party planning?",
@@ -440,6 +422,24 @@
           "check": "number_close",
           "passed": true,
           "detail": "60"
+        }
+      ]
+    },
+    {
+      "id": "nm4",
+      "category": "numeric",
+      "prompt": "Which 3 SKUs have the lowest available stock?",
+      "passed": false,
+      "checks": [
+        {
+          "check": "tool_called",
+          "passed": false,
+          "detail": "expected inventory_list with {\"page\": 2}; called inventory_list({\"page\": 1})"
+        },
+        {
+          "check": "contains",
+          "passed": false,
+          "detail": "answer does not mention 'KQ9-L-NVY'"
         }
       ]
     }
