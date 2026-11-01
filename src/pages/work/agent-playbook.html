@@ -17,7 +17,7 @@ nav: work
           <div><dt>Role</dt><dd>Sole author</dd></div>
           <div><dt>Stack</dt><dd>Python 3.9, standard library only</dd></div>
           <div><dt>Contents</dt><dd>Harness, monitor, six chapters, ten lessons</dd></div>
-          <div><dt>Tests</dt><dd>44</dd></div>
+          <div><dt>Tests</dt><dd>99, in CI on three Python versions</dd></div>
         </dl>
       </section>
 
@@ -39,7 +39,7 @@ nav: work
           <p>The agent I run for a team had no automated evaluation when I first rolled it out. I found a real metric error only because the agent happened to read a glossary and told me (<a href="{{base}}work/team-agent.html#learned">the story is here</a>). Nothing I had built was designed to catch it. This repository is what I built so the next one is caught by a test.</p>
 
           <h2 id="diff">The diff that matters</h2>
-          <p>25 synthetic cases for a fictional inventory assistant, graded on two recorded runs. The transcripts are hand-written to show a realistic failure and fix; they are not output from a real model.</p>
+          <p>25 synthetic cases for a fictional inventory assistant, graded on two recorded runs. The transcripts are hand-written to show a realistic failure and fix; they are not output from a real model. The harness can also run the same cases against a real model through any OpenAI-compatible endpoint (<code>evalkit live</code>, tested offline against a fake server). I have not recorded a live run yet, so nothing on this page is from one.</p>
           <pre class="code"><span class="t-dim">$</span> python3 -m evalkit diff --cases evals/cases/inventory_assistant.jsonl \
         --before evals/transcripts/v1.jsonl --after evals/transcripts/v2.jsonl
 v1 -&gt; v2
