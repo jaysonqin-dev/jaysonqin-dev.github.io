@@ -24,6 +24,8 @@ nav: work
             <li><a href="#problem">The problem</a></li>
             <li><a href="#origin">Where it came from</a></li>
             <li><a href="#design">What I built</a></li>
+            <li><a href="#structure">How the instructions are built</a></li>
+            <li><a href="#questions">What people ask it</a></li>
             <li><a href="#decisions">Design decisions</a></li>
             <li><a href="#learned">What real use taught me</a></li>
             <li><a href="#rollout">Rollout</a></li>
@@ -73,13 +75,48 @@ nav: work
           </figure>
           <p>The agent has a small set of jobs: answer status and results questions in a structured format, answer higher-level questions that need several sources combined and build the report, and draft routine messages for the user to review. It reads through tools. Before it writes to a tracker or sends anything, it shows the exact change or message and waits for the user to approve.</p>
 
+          <h2 id="structure">How the instructions are built</h2>
+          <p>The instructions are about 40 KB in roughly thirty sections. I organise them by the question each section answers, so a rule is easy to find and a new rule has an obvious home.</p>
+          <ul>
+            <li><strong>Who it serves, and where to look first.</strong> Before any tool call the agent decides what kind of question it has, then goes where a colleague who had worked there for years would look.</li>
+            <li><strong>Integrity rules, marked critical.</strong> Check that a search returned everything before reporting a count. Keep every table syntactically valid. Answer only what was asked, and keep incidental facts out of the findings.</li>
+            <li><strong>Domain knowledge.</strong> How the team's tracking systems are laid out, what each field means, and which parts are independent of each other.</li>
+            <li><strong>False-alarm prevention.</strong> What is normal for each type of record, and a checklist to run before anything is flagged as a risk.</li>
+            <li><strong>Procedures.</strong> A method for deciding whether two entries are the same record, rules for writing to the trackers safely, how to explain an item with no documented reason, and a fixed template for period-level reports.</li>
+            <li><strong>Connections to data models.</strong> Shared rules for read-only queries, then one section per model with its own connection recipe, verified tables, definitions that must not be misread, and typical workflows.</li>
+            <li><strong>Boundaries.</strong> Approval before any write or send, use of mail and chat only for the requesting user's own task, and an output structure for non-trivial analysis.</li>
+          </ul>
+          <p>The agent does not rely on a knowledge file for any of this. The knowledge file holds definitions and is allowed to be approximate. Anything that has to be followed exactly is in the instructions.</p>
+
+          <h2 id="questions">What people ask it</h2>
+          <p>Three kinds of request show the range, and what a good answer looks like for each.</p>
+          <h3>"Where do we stand on this season?"</h3>
+          <p>This gets a fixed seven-part report, in the same order every time:</p>
+          <ol>
+            <li>A verification statement: which trackers were queried, that no result was truncated, and the reference date used for anything overdue.</li>
+            <li>A coverage snapshot: one row per tracker, with a count by status.</li>
+            <li>Highlights: items with strong, clean results, as the positive counterpart to the risks.</li>
+            <li>A dedicated section for a tester group the team always wants called out. If there are none, it says so instead of leaving the section out.</li>
+            <li>Risk callouts, in lettered sub-sections that are each their own table: stopped items, dropped items, delayed items with a real signal, overdue items.</li>
+            <li>Data-quality notes, written as "worth checking with the owner", not as confirmed problems, because they need a person's judgment.</li>
+            <li>A closing offer that names the actual open items, never a generic "let me know if you need anything else".</li>
+          </ol>
+          <h3>"Which of the items flagged as at risk are covered by testing?"</h3>
+          <p>This is two sources, not one. The agent gets the flagged list from a BI model, cross-references each item against the trackers, and reports the overlap: which are covered, which are not. The instructions say outright that the first step alone is not an answer.</p>
+          <h3>"Do we have enough stock to fulfil these sample orders?"</h3>
+          <p>The agent checks the inventory date, inspects the row grain before adding anything up, compares available units with the requested quantity per SKU and location, and shows any multi-location allocation explicitly instead of pooling silently. It returns a table with the shortage per line and prepares the order for review. It does not submit it without explicit confirmation.</p>
+
           <h2 id="decisions">Design decisions</h2>
           <h3>One tool per dataset, identifiers fixed</h3>
           <p>I first thought of one generic "query a dataset" tool. I rejected it: it asks the model to reproduce a long dataset identifier on every call, and one wrong character fails silently as a "not found". Picking among clearly named tools is something a model does reliably. Only the query text is left for the model to write.</p>
           <h3>Exact values live in the instructions, not the knowledge base</h3>
           <p>Retrieval is probabilistic: the agent decides whether to search, and what comes back can be truncated or paraphrased. Instructions are read in full every turn. So anything that must be followed exactly (identifiers, the specific workaround for a known tool bug) is in the instructions. The knowledge base is for large reference material where an approximate answer is fine.</p>
-          <h3>Route by the kind of question</h3>
-          <p>People ask this agent about things that are not testing at all: benefits, forms, who to ask. A metrics dataset answers those confidently and wrongly. The instructions say which source answers which kind of question, and that a mixed question runs the sources in parallel.</p>
+          <h3>Route by the kind of question, and search before asking</h3>
+          <p>People ask this agent about things that are not testing at all: benefits, policies, where a document lives. A metrics dataset answers those confidently and wrongly. So there are three routes: testing questions go to the trackers and BI models, clearly non-testing questions go to mail, chat and documents and never touch the data, and mixed questions ("what happened with that request?") run both in parallel and combine the results. Before it asks the user for any detail, it searches. It runs at least two searches with different keywords, in the language the user wrote in and with synonyms, and if it finds nothing it says which sources and keywords it tried.</p>
+          <h3>Three levels of "verified"</h3>
+          <p>For BI queries, the agent reports three things separately: the connection works, the schema was read, and the business data was actually returned. A constant query that succeeds proves only the first. A metadata call that fails does not prove that reading data will fail, because the two can be permissioned differently; the instructions record the route that was tested for each model and the date it was tested. A "not found" error is not automatically classed as a permissions problem, since a wrong route or a wrong identifier produces the same error.</p>
+          <h3>Match records on evidence, and debug writes on one disposable row</h3>
+          <p>To decide whether two entries describe the same real test, the agent compares high-signal fields: an exact match on the linked report is the strongest evidence, then the same rating, participant count and date together. A row merely having some data proves nothing, because two unrelated tests can both be complete. And when a write fails with an error that does not name the column, it does not bisect by inserting real rows, which leaves orphans behind. It creates one disposable row, narrows the problem with updates to that single row, and deletes it afterwards.</p>
           <h3>It asks first</h3>
           <p>For anything that would reach another person or change a tracker, the agent shows its planned action and waits. That one rule removes a whole class of failure and made it easier for leaders to trust the rest. It also has a second half, which I only learned from a real slip (below): a plan that was proposed once is not an approval.</p>
 
