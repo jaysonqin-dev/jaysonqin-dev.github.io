@@ -30,7 +30,7 @@ HEADER = re.compile(r"\A\s*<!--\s*(.*?)\s*-->\s*", re.DOTALL)
 def asset_version() -> str:
     """Short hash of the CSS and JS, appended as ?v= so browsers never serve a stale copy."""
     digest = hashlib.sha1()
-    for folder, pattern in (("assets/css", "*.css"), ("assets/js", "*.js")):
+    for folder, pattern in (("assets/css", "*.css"), ("assets/js", "*.js"), ("assets/img", "favicon.svg"), ("assets/img", "apple-touch-icon.png")):
         for path in sorted((ROOT / folder).glob(pattern)):
             digest.update(path.name.encode())
             digest.update(path.read_bytes())
