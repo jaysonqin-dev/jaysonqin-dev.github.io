@@ -223,6 +223,9 @@ a.card:hover .more svg { transform: translateX(3px); }
 .rules li { background: var(--bg-elev); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; font-size: 15.5px; }
 .rules li small { display: block; margin-top: 6px; color: var(--muted); font-size: 13.5px; line-height: 1.5; }
 .rules li b { font-weight: 640; }
+.side-note { margin: 28px 0 0; font-size: 15px; }
+.prose ul.rules { padding-left: 0; margin: 22px 0; }
+.side-note a { color: var(--ink-2); }
 
 /* about */
 .about { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(28px, 5vw, 72px); }

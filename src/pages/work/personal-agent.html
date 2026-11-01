@@ -1,0 +1,90 @@
+<!--
+title: Jayson's Twin Bro: a personal AI analyst that learns from every correction | Jayson Qin
+description: Case study: the personal agent I have used every day since July for analyst work. About 130 rules, each one added after a real correction, and the quality bar that decides which corrections become rules.
+path: work/personal-agent.html
+nav: work
+-->
+    <div class="wrap">
+      <section class="case-hero">
+        <p class="crumb"><a href="{{base}}index.html#work">Work</a> / Personal agent</p>
+        <h1>A personal AI analyst that gets better with every correction.</h1>
+        <p class="lede">Since July I have used a custom agent in GitHub Copilot, which I call Jayson's Twin Bro, for my daily analyst work: reconciling trackers, building reports and decks, drafting messages. It now holds about 130 rules, and every one was added after a real correction. The full file is private because it contains names and workplace details. The method is public, and this page explains it.</p>
+        <dl class="meta-row">
+          <div><dt>Role</dt><dd>Designer and daily user</dd></div>
+          <div><dt>Since</dt><dd>July, when I got access to GitHub Copilot</dd></div>
+          <div><dt>Size</dt><dd>About 130 rules in 14 sections, about 60 KB</dd></div>
+          <div><dt>Status</dt><dd>In daily use, updated after corrections</dd></div>
+        </dl>
+      </section>
+
+      <div class="case-body">
+        <nav class="toc" aria-label="On this page">
+          <p>On this page</p>
+          <ol>
+            <li><a href="#job">What it is for</a></li>
+            <li><a href="#structure">How the instructions are organised</a></li>
+            <li><a href="#loop">How a correction becomes a rule</a></li>
+            <li><a href="#rules">Rules, and what went wrong first</a></li>
+            <li><a href="#reuse">What I reused for the team agent</a></li>
+            <li><a href="#limits">What this page doesn't show</a></li>
+          </ol>
+        </nav>
+
+        <article class="prose">
+          <h2 id="job">What it is for</h2>
+          <p>I describe a task the way I would hand it to a colleague, and the agent carries it through: it reads the trackers, reconciles what disagrees, builds the deck or the message, and checks its own work. The goal I gave it on day one was to execute the whole workflow, not to suggest steps for me to do by hand.</p>
+          <p>The aim is that most of what comes back needs no editing. That is why so much of the file is not about tools at all. It is about judgment: what to verify, when to ask, what a good answer looks like for the person reading it.</p>
+
+          <h2 id="structure">How the instructions are organised</h2>
+          <p>The file is grouped into sections: mission, my writing voice, how I work, an execution policy for risky actions, how to analyse data, how to build deliverables, how to build other agents, output standards, and a learning loop. A rule sits in the section where it will be applied. The rules that took the most care are the ones about when to stop and ask.</p>
+          <ul>
+            <li><strong>Execution policy.</strong> For anything that sends a message, notifies someone or changes a system, the agent first shows a dry run of the planned actions and waits for my explicit approval.</li>
+            <li><strong>Reuse before building.</strong> Before proposing a new setup for a new data source, it checks whether a credential or pattern I already have would work.</li>
+            <li><strong>Self-check before delivery.</strong> Logic, data consistency and completeness are checked before a result is handed back.</li>
+          </ul>
+
+          <h2 id="loop">How a correction becomes a rule</h2>
+          <p>Most of what I tell the agent is a one-off: change this row, shorten that sentence. If every correction became a rule the file would be noise. So each correction goes through the same four questions before it is written down.</p>
+          <ol>
+            <li><strong>General.</strong> Will it help in future sessions, not just on this task?</li>
+            <li><strong>Specific.</strong> Is the fix a concrete step the agent can follow?</li>
+            <li><strong>Has an example.</strong> Is there a right-versus-wrong case?</li>
+            <li><strong>Not already covered.</strong> If a rule exists, strengthen it instead of adding a duplicate.</li>
+          </ol>
+          <p>You can run this triage on seven real kinds of corrections in <a href="{{base}}lab/learning-loop.html">the learning-loop lab</a>.</p>
+          <p>Two further rules shape the loop. First, the agent does not wait for me to say "learn this": after a correction it checks the bar itself, writes the rule if it passes, and tells me in one line what it captured so I can veto it. Second, my behaviour counts as feedback. If I ignore a draft and write my own, that is a signal, and the agent compares the two to see what it got wrong.</p>
+          <h3>When edits stop converging</h3>
+          <p>One rule came from a long drafting session. A paragraph was rejected several times, and each fix only swapped a word or a clause. The real problem was structural: one sentence was carrying three separate points. The rule now says that after two rounds of surface edits that still get rejected, stop and look for a structural cause before trying another tweak.</p>
+
+          <h2 id="rules">Rules, and what went wrong first</h2>
+          <ul class="rules">
+            <li><b>Don't batch an edit and the command that tests it.</b><small>Independent calls in one block can run in parallel. A check "passed" because it ran before the change had landed.</small></li>
+            <li><b>Don't add features nobody asked for.</b><small>I once offered an option I had invented. Now: restate an ambiguous phrase back before building from it.</small></li>
+            <li><b>Change only the exact text asked about.</b><small>Asked to remove one phrase from a subtitle, the agent deleted the whole subtitle and a useful note with it.</small></li>
+            <li><b>Don't state platform behaviour as fact unless it was verified.</b><small>The agent told me a chat could not switch agents. It could. Now an inference has to be labelled as one.</small></li>
+            <li><b>Verify a formula against the source's own definition.</b><small>A rule written from a verbal description would have deducted a quantity twice.</small></li>
+            <li><b>After debugging that wrote to a live system, look for what was left behind.</b><small>Trial-and-error writes leave test rows. The check is now a standard last step, not something I notice later.</small></li>
+            <li><b>Before regenerating a file, read the live copy for manual edits.</b><small>A rebuild from a script can silently overwrite changes I made by hand.</small></li>
+            <li><b>Treat the text "None" as blank.</b><small>Old exports left the four-letter word in cells, which passes a simple "has a value" check and hid empty fields for months.</small></li>
+          </ul>
+
+          <h2 id="reuse">What I reused for the team agent</h2>
+          <p>The team agent is the same pattern with a different audience. The approval rule, the verification rules and the structure of the instructions came across almost unchanged. What the team version added was domain knowledge, tools for Power BI and Snowflake, and a report template. See <a href="{{base}}work/team-agent.html">Product Testing Analyst</a>.</p>
+
+          <h2 id="limits">What this page doesn't show</h2>
+          <div class="callout limits">
+            <b class="k">Honest limits</b>
+            <ul>
+              <li>I am the only user, so there are no usage numbers and nothing to compare against. The evidence is that I keep using it and keep adding to it.</li>
+              <li>The rules are checked by use, not by an automated test suite. The next step is to turn past corrections into cases for the harness in <a href="{{base}}work/agent-playbook.html">the playbook</a>.</li>
+              <li>The real file is private. The rules above are rewritten without names, systems or data, and the method and a template are public.</li>
+            </ul>
+          </div>
+
+          <div class="next">
+            <a class="btn btn-ghost" href="{{base}}work/team-agent.html">&larr; Product Testing Analyst</a>
+            <a class="btn btn-primary" href="{{base}}lab/learning-loop.html">Try the triage &rarr;</a>
+          </div>
+        </article>
+      </div>
+    </div>

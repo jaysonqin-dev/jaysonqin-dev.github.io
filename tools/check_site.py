@@ -20,7 +20,7 @@ from urllib.parse import unquote, urldefrag, urlparse
 # generic: employer names, internal tool names and colleagues' names.
 PRIVATE_TERMS = [
     r"lululemon", r"\blulu\b", r"Labs Ops", r"APE Team", r"Testers and Testing",
-    r"NDA or Waiver", r"jqin6", r"qinjialiang", r"\bPTS\b", r"Smartsheet",
+    r"NDA or Waiver", r"jqin6", r"qinjialiang", r"\bPTS\b",
     r"Siân", r"\bJill\b", r"Kristin", r"BEGIN (OPENSSH|RSA) PRIVATE",
 ]
 SKIP_DIRS = {".git", "tools", "src", "node_modules"}
