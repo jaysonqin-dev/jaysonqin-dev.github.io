@@ -12,6 +12,7 @@ Also writes sitemap.xml and robots.txt for that base URL.
 
 from __future__ import annotations
 
+import html
 import os
 import re
 import sys
@@ -54,8 +55,8 @@ def render(layout: str, meta: dict, content: str) -> str:
     nav = meta.get("nav", "")
     canonical = f"{BASE_URL}/" if out_path == "index.html" else f"{BASE_URL}/{out_path}"
     values = {
-        "title": meta["title"],
-        "description": meta["description"],
+        "title": html.escape(html.unescape(meta["title"]), quote=True),
+        "description": html.escape(html.unescape(meta["description"]), quote=True),
         "base": base,
         "site": BASE_URL,
         "canonical": canonical,
