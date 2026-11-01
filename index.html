@@ -69,7 +69,7 @@ v1 -&gt; v2
   <span class="t-bad">regressed</span>  tr4
   <span class="t-ok">fixed</span>      md1 tr3 ap1 fm3 sr2 nm1
   <span class="t-dim">still failing  nm4</span></pre>
-          <p class="term-note">Harness output, lightly reformatted. The pass rate went up and a regression is hiding inside it: the reason I read what a change <em>broke</em> before I celebrate what it fixed. Cases are synthetic. <a href="work/agent-playbook.html">How it works</a></p>
+          <p class="term-note">I scored two versions of an agent's instructions on 25 test questions. The pass rate went up, but one question that used to pass now fails (<em>regressed</em>). That is why I read what a change <em>broke</em> before I celebrate what it fixed. The questions are synthetic. <a href="work/agent-playbook.html">How it works</a></p>
           <p class="term-note">Case ids: md metric definition, tr tool routing, ap approval, fm format, sr source routing, nm numeric.</p>
         </figure>
       </div>
@@ -77,10 +77,10 @@ v1 -&gt; v2
 
     <div class="wrap">
       <div class="proof reveal">
-        <div><b>In use</b><span>An analytics agent I built is used by managers on a product R&amp;D team.</span></div>
-        <div><b>8 MB</b><span>Language model running inside a Chrome extension. No network requests, enforced by a test.</span></div>
-        <div><b>18 / 22</b><span>Planted misfiles found on two invented libraries, 7 of 8 on the one I had not tuned on. Keyword matching found none.</span></div>
-        <div><b>4 repos</b><span>Open source, with 370+ automated tests. Nothing needs more than Python or a browser.</span></div>
+        <div><b>In use</b><span>An AI analytics agent I built is used by managers on a product R&amp;D team.</span></div>
+        <div><b>~130 rules</b><span>My own daily agent has learned them from my corrections over about three months. Most corrections never become a rule.</span></div>
+        <div><b>Approval-gated</b><span>Both of my agents show a plan and wait before anything is sent or written.</span></div>
+        <div><b>4 repos</b><span>Open source, with 370+ automated tests. Each one runs with only Python or a browser.</span></div>
       </div>
     </div>
 
@@ -117,25 +117,25 @@ v1 -&gt; v2
             <div class="proof-line">44 tests &middot; standard library only</div>
           </a>
 
-          <a class="card c-half reveal" href="work/marksly.html">
-            <span class="num">03 &middot; SHIPPED</span>
-            <h3>An on-device language model in a Chrome extension</h3>
-            <p>A bookmark organizer that finds misfiled bookmarks with an 8 MB embedding model bundled in the extension. Every move is previewed and undoable. Nothing leaves the browser.</p>
-            <div class="proof-line">18 of 22 planted misfiles found vs 0 &middot; 110 tests &middot; live demo</div>
-          </a>
-
           <a class="card c-half reveal" href="work/agent-tool-safety.html">
-            <span class="num">04 &middot; SAFETY</span>
+            <span class="num">03 &middot; SAFETY</span>
             <h3>Safe writes for tool-using agents</h3>
             <p>Risk-tiered tools, a mandatory dry-run, approval bound to the exact plan, and a tamper-evident audit log, tested against a mock API that fails the way real ones do.</p>
             <div class="proof-line">138 tests &middot; standard library only</div>
           </a>
 
           <a class="card c-half reveal" href="work/extraction-parity.html">
-            <span class="num">05 &middot; RELIABILITY</span>
+            <span class="num">04 &middot; RELIABILITY</span>
             <h3>Proving a model swap is safe</h3>
             <p>A golden set, schema validation, field-level parity reporting and a pass/fail gate for replacing the model behind a document-extraction step, with a cost model for the decision.</p>
             <div class="proof-line">82 tests &middot; standard library only</div>
+          </a>
+
+          <a class="card c-half reveal" href="work/marksly.html">
+            <span class="num">05 &middot; SIDE PROJECT</span>
+            <h3>A language model inside a Chrome extension</h3>
+            <p>Marksly, a bookmark organizer that runs an 8 MB embedding model in the browser. Nothing leaves the computer. Built to practise shipping a model with previews, undo and tests.</p>
+            <div class="proof-line">110 tests &middot; live demo</div>
           </a>
         </div>
       </div>
@@ -148,7 +148,7 @@ v1 -&gt; v2
           <p>They are the difference between a demo that works once and an agent a team can rely on.</p>
         </div>
         <div class="principles reveal">
-          <div class="principle"><h3>Evidence before claims</h3><p>I report what I measured, on what data, and what the number does not show. Where the data is invented, I say so on the page.</p><a class="ev" href="work/marksly.html#evidence">See the Marksly numbers</a></div>
+          <div class="principle"><h3>Evidence before claims</h3><p>I report what I measured, on what data, and what the number does not show. Where the data is invented, I say so on the page.</p><a class="ev" href="work/team-agent.html#limits">See what the team-agent page says it does not show</a></div>
           <div class="principle"><h3>Evaluate before I edit the rules</h3><p>A change that raises the pass rate can still break something. I read the regressions first, and every incident becomes a test case.</p><a class="ev" href="lab/eval-lab.html">Try the eval lab</a></div>
           <div class="principle"><h3>Ask before acting</h3><p>Dry-run, approval tied to the exact plan, an audit trail, and undo. Agents that write to team systems need all four.</p><a class="ev" href="work/agent-tool-safety.html">See the safety layer</a></div>
           <div class="principle"><h3>Start from the question</h3><p>I came from analytics. I begin with what the team needs answered and what a wrong answer would cost, then pick the tools.</p><a class="ev" href="work/team-agent.html">Read the team-agent case study</a></div>
