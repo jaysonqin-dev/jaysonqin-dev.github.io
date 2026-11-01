@@ -1,0 +1,21 @@
+name: site-checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Built pages are up to date with src/
+        run: |
+          python tools/build.py > /dev/null
+          git diff --exit-code -- . ':!sitemap.xml'
+      - name: Links, anchors, alt text, headings, private-term scan
+        run: python tools/check_site.py

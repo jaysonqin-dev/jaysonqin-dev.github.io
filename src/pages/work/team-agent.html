@@ -35,6 +35,15 @@ nav: work
         </nav>
 
         <article class="prose">
+          <div class="callout">
+            <b class="k">Outcome: my estimates and feedback, not telemetry</b>
+            <ul>
+              <li>A complete leadership-level risk review deck, or a full product-test report, used to take at least two to three days, from querying and organising the data to designing the slides. Given a clear goal, the agent usually produces the final version within half a day.</li>
+              <li>Leaders describe the output as very accurate, well structured, and thorough in its analysis.</li>
+              <li>Separately, a Power Automate workflow I built saves researchers at least ten minutes every time it runs, about 70 times a quarter: roughly 12 hours a quarter.</li>
+            </ul>
+          </div>
+
           <h2 id="problem">The problem</h2>
           <p>Testing information for a product team lives in several places: trackers kept by different groups, Power BI models and Snowflake tables, each with its own definitions. A leadership question such as "where are we on this program?" meant someone pulling from several of them and reconciling the differences. Smaller requests (a status email, a reply to a thread) came in constantly and were mostly the same few patterns.</p>
           <p>A wrong answer here is not cosmetic. It feeds decisions about what to test and what to make. So the bar was not "answers quickly". It was "answers correctly, says where it got the answer, and says when it can't".</p>
@@ -106,6 +115,38 @@ nav: work
           <h3>"Do we have enough stock to fulfil these sample orders?"</h3>
           <p>The agent checks the inventory date, inspects the row grain before adding anything up, compares available units with the requested quantity per SKU and location, and shows any multi-location allocation explicitly instead of pooling silently. It returns a table with the shortage per line and prepares the order for review. It does not submit it without explicit confirmation.</p>
 
+          <h3>A sample answer, with invented data</h3>
+          <figure class="sample">
+            <div class="sample-q"><span>Question</span>Where do we stand on the Q3 program?</div>
+            <div class="sample-a">
+              <p><b>1. Verification.</b> Queried all four trackers. No result was truncated. Reference date for anything overdue: 3 Oct.</p>
+              <p><b>2. Coverage snapshot.</b></p>
+              <table class="t">
+                <thead><tr><th>Tracker</th><th>Records</th><th>Complete</th><th>In progress</th><th>Not started</th><th>Stopped</th></tr></thead>
+                <tbody>
+                  <tr><td>A, live</td><td>14</td><td>0</td><td>9</td><td>5</td><td>0</td></tr>
+                  <tr><td>A, completed</td><td>22</td><td>22</td><td>0</td><td>0</td><td>0</td></tr>
+                  <tr><td>B, live</td><td>11</td><td>0</td><td>8</td><td>2</td><td>1</td></tr>
+                  <tr><td>B, completed</td><td>17</td><td>17</td><td>0</td><td>0</td><td>0</td></tr>
+                </tbody>
+              </table>
+              <p class="muted">A and B are independent tracks, so no status mismatch between them is flagged.</p>
+              <p><b>3. Highlights.</b> Item 104 (trail pack): complete, rating 4.6, 38 participants.</p>
+              <p><b>4. Special tester group.</b> None found this period.</p>
+              <p><b>5. Risk callouts. C: in progress with a delay signal.</b></p>
+              <table class="t">
+                <thead><tr><th>Item</th><th>Name</th><th>Stage</th><th>Status</th><th>Reason</th></tr></thead>
+                <tbody>
+                  <tr><td>117</td><td>Day pack</td><td>P2</td><td>In progress</td><td>Samples delayed: expected after the test window (from the sample status field)</td></tr>
+                  <tr><td>131</td><td>Duffel</td><td>P1</td><td>Not started</td><td>Awaiting sample delivery</td></tr>
+                </tbody>
+              </table>
+              <p><b>6. Data-quality notes.</b> Items 142 and 143 may be duplicates. Worth checking with the owner.</p>
+              <p><b>7.</b> Want me to reconcile the possible duplicate, or turn this into a slide deck?</p>
+            </div>
+            <figcaption>All data invented, and shortened: the real report has lettered risk tables A to D.</figcaption>
+          </figure>
+
           <h2 id="decisions">Design decisions</h2>
           <h3>One tool per dataset, identifiers fixed</h3>
           <p>I first thought of one generic "query a dataset" tool. I rejected it: it asks the model to reproduce a long dataset identifier on every call, and one wrong character fails silently as a "not found". Picking among clearly named tools is something a model does reliably. Only the query text is left for the model to write.</p>
@@ -162,7 +203,7 @@ nav: work
           <div class="callout limits">
             <b class="k">Honest limits</b>
             <ul>
-              <li>No usage numbers or accuracy figures. I don't have telemetry I can publish, so I won't invent any. The evidence of quality is feedback from the people who use it.</li>
+              <li>No usage telemetry and no accuracy figure I can publish. The time savings are my own estimates from doing the same work both ways, and the quality feedback comes from the people who use it.</li>
               <li>The live agent has no automated evaluation yet. The harness came after the failures above, and the cases in it are modelled on them, not run against the live agent.</li>
               <li>The data, tools and systems are internal, so you cannot run this. The method is open source in the playbook, and the examples there are synthetic.</li>
             </ul>
